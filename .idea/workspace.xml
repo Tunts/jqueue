@@ -2,9 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="0c7b3903-6d67-4b9b-940d-0007c333aff8" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/jqueue.js" afterPath="$PROJECT_DIR$/src/jqueue.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test/jqueue.test.js" afterPath="$PROJECT_DIR$/test/jqueue.test.js" />
     </list>
     <ignored path="jqueue.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -28,8 +26,8 @@
       <file leaf-file-name="jqueue.js" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/jqueue.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.81621623">
-              <caret line="177" column="18" selection-start-line="177" selection-start-column="18" selection-end-line="177" selection-end-column="18" />
+            <state vertical-scroll-proportion="0.78519857">
+              <caret line="165" column="20" selection-start-line="165" selection-start-column="20" selection-end-line="165" selection-end-column="20" />
               <folding />
             </state>
           </provider>
@@ -57,12 +55,17 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GithubProjectSettings">
+    <option name="CREATE_PULL_REQUEST_DEFAULT_BRANCH" value="master" />
+    <option name="CREATE_PULL_REQUEST_DEFAULT_REPO_USER" value="Tunts" />
+    <option name="CREATE_PULL_REQUEST_DEFAULT_REPO_NAME" value="jqueue" />
+  </component>
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/jqueue.js" />
-        <option value="$PROJECT_DIR$/src/jqueue.js" />
         <option value="$PROJECT_DIR$/test/jqueue.test.js" />
+        <option value="$PROJECT_DIR$/src/jqueue.js" />
       </list>
     </option>
   </component>
@@ -318,8 +321,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/jqueue.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.81621623">
-          <caret line="177" column="18" selection-start-line="177" selection-start-column="18" selection-end-line="177" selection-end-column="18" />
+        <state vertical-scroll-proportion="0.78519857">
+          <caret line="165" column="20" selection-start-line="165" selection-start-column="20" selection-end-line="165" selection-end-column="20" />
           <folding />
         </state>
       </provider>

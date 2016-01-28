@@ -163,16 +163,6 @@ function use(queueName, cb) {
     }
 }
 
-function put (message) {
-    verifyConnection();
-    if(!(message instanceof JqueueMessage)) {
-        throw new JqueueException('Put expects a JqueueMessage. Please, create a new JqueueMessage and pass it as parameter', 3);
-    } else {
-
-    }
-}
-
 exports.init = init;
 exports.listAll = listAll;
 exports.use = use;
-exports.put = put;
