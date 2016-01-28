@@ -99,7 +99,6 @@ function createNewQueue(queueName, cb) {
 }
 
 function writeMessage (message, cb) {
-    console.log(message.queueName);
     connection.query('INSERT INTO ' + message.queueName + ' (status, data, priority, date_time) \
         VALUES ('+ message.status + ',\'' + message.data + '\',' + message.priority + ',' + message.dateTime + ')', cb)
 }
