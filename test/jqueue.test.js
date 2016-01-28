@@ -10,9 +10,10 @@ var conncetionInfo = {
 
 var dataSource = new db.DB(conncetionInfo);
 
-jqueue.init(dataSource);
-jqueue.ready(function() {
-    jqueue.use('test',function(error) {
-        console.log(error);
+jqueue.init(dataSource, function() {
+    jqueue.use('test',function(error, queue) {
+        queue.put('test message', function(error, data) {
+            console.log(error, data);
+        });
     });
 });

@@ -1,8 +1,7 @@
-var q = require('../node_modules/q/q');
 var isConnected = false;
 var dataSource;
 var connection;
-var connectionPromise;
+var queues = {};
 
 function JqueueException (message, code) {
     this.name = 'JqueueException';
@@ -13,16 +12,71 @@ function JqueueException (message, code) {
 JqueueException.prototype = Object.create(Error.prototype);
 JqueueException.constructor = JqueueException;
 
-function JqueueMessage (message, timeToRun, delay, priority, dateTime) {
+function Message (data, queueName, status, delay, priority, dateTime) {
     this.id = null;
-    this.message = message;
-    this.timeToRun = timeToRun;
+    this.data = data;
+    this.status = status || 0;
     this.delay = delay || 0;
     this.priority = priority || 0;
-    this.dateTime = dateTime || new Date();
+    this.dateTime = dateTime || 'CURRENT_TIMESTAMP';
+    this.queueName = queueName;
+
+    this.release = function(delay) {
+        if(delay) {
+            //TODO release with delay
+        } else {
+            //TODO release
+        }
+    };
+
+    this.touch = function() {
+        //TODO touch
+    };
+
+    this.delete = function() {
+        //TODO delete
+    };
+
+    this.bury = function() {
+        //TODO bury
+    };
 }
-JqueueMessage.prototype = Object.create(Object.prototype);
-JqueueMessage.constructor = JQueueMessage;
+Message.prototype = Object.create(Object.prototype);
+Message.constructor = Message;
+
+function Queue (name) {
+    var self = this;
+    this.name = name;
+
+    this.put = function(message, cb) {
+        var queueMessage = new Message(message, self.name);
+        writeMessage(queueMessage, function(error, data) {
+            var insertedId = undefined;
+            if(!error) {
+                insertedId = data.insertId;
+            }
+            callBack(cb, error, insertedId);
+        });
+    };
+
+    this.reserve = function() {
+        //TODO reserve
+    };
+
+    this.watch = function() {
+        //TODO watch
+    };
+
+    this.kick = function(max) {
+        //TODO kick
+    };
+
+    this.kickMessage = function(id) {
+        //TODO kick
+    };
+}
+Queue.prototype = Object.create(Object.prototype);
+Queue.constructor = Queue;
 
 var verifyConnection = function() {
     if(!isConnected) {
@@ -38,76 +92,87 @@ function createNewQueue(queueName, cb) {
     connection.query('CREATE TABLE '+ queueName +' (\
         id BIGINT NOT NULL AUTO_INCREMENT,\
         status TINYINT NOT NULL,\
-        message TEXT NOT NULL,\
-        time_to_run TIMESTAMP NOT NULL,\
+        data TEXT NOT NULL,\
         priority TINYINT NOT NULL,\
         date_time TIMESTAMP NOT NULL,\
         PRIMARY KEY (id))', cb);
 }
 
-var currentQueue = null;
+function writeMessage (message, cb) {
+    console.log(message.queueName);
+    connection.query('INSERT INTO ' + message.queueName + ' (status, data, priority, date_time) \
+        VALUES ('+ message.status + ',\'' + message.data + '\',' + message.priority + ',' + message.dateTime + ')', cb)
+}
 
-var init = function(ds){
-    dataSource = ds;
-    var deferred = q.defer();
-    dataSource.connect(function(conn) {
-        connection = conn;
-        isConnected = true;
-        deferred.resolve(conn);
-    });
-    return connectionPromise = deferred.promise;
-};
-
-var ready = function(fn) {
-    if(!connectionPromise) {
-        throw new JqueueException('Please, call init before call ready', 1);
+function callBack(cb, error, data, other) {
+    try {
+        cb(error, data, other);
+    } catch (err){
+        console.log(err);
     }
-    connectionPromise.then(fn);
-};
+}
 
-var listAll = function(cb) {
+function init (ds, cb){
+    var error = undefined;
+    dataSource = ds;
+    dataSource.connect(function(conn) {
+        if(!conn) {
+            error = {
+                message: 'connection fail'
+            };
+        } else {
+            connection = conn;
+            isConnected = true;
+        }
+        callBack(cb ,error, conn);
+    });
+}
+
+function listAll (cb) {
     verifyConnection();
     var queueList = [];
     connection.query('SHOW TABLES', function(error, rows, fields) {
         for(var ix in rows) {
             queueList.push(rows[ix].Tables_in_jqueue);
         }
-        cb(error, queueList);
+        callBack(cb, error, queueList);
     });
-};
+}
 
-var use = function(queueName, cb) {
+function use(queueName, cb) {
     verifyConnection();
-    if(currentQueue !== queueName) {
+    if(queues.hasOwnProperty(queueName)){
+        return queues[queueName];
+    } else {
+        var queue = undefined;
         verifyIfQueueExists(queueName, function(error) {
             if(error) {
                 createNewQueue(queueName, function(error) {
-                    if(error) {
-                        throw new JqueueException('Cannot found queue and cannot create a new queue', 2);
-                    } else {
-                        cb();
+                    if(!error) {
+                        queue = new Queue(queueName);
+                        queues[queueName] = queue;
                     }
+                    callBack(cb, error, queue);
                 })
             } else {
-                currentQueue = queueName;
-                cb();
+                queue = new Queue(queueName);
+                queues[queueName] = queue;
+                callBack(cb, error, queue);
             }
         })
     }
-};
+}
 
-var put = function(message) {
+function put (message) {
     verifyConnection();
     if(!(message instanceof JqueueMessage)) {
         throw new JqueueException('Put expects a JqueueMessage. Please, create a new JqueueMessage and pass it as parameter', 3);
     } else {
-        
-    }
-};
 
-exports.JqueueMessage = JqueueMessage;
+    }
+}
+
 exports.init = init;
-exports.ready = ready;
 exports.listAll = listAll;
 exports.use = use;
 exports.put = put;
