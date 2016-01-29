@@ -12,8 +12,15 @@ var dataSource = new db.DB(conncetionInfo);
 
 jqueue.init(dataSource, function() {
     jqueue.use('test',function(error, queue) {
-        queue.put('test message', function(error, data) {
-            console.log(error, data);
+        queue.kick(1, function(error){
+            console.log(error);
+            queue.watch(function(error, message) {
+                if(message) {
+                    message.release(function(error) {
+                        console.log(error);
+                    });
+                }
+            });
         });
     });
 });
