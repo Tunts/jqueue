@@ -1,15 +1,16 @@
 var callBack = require('./callback').callBack;
 
-function Message (conn, data, queueName, delay, priority, status, dateTime, id) {
+function Message (conn, data, queueName, delay, priority, status, dateTime, id, timeToRun) {
     var self = this;
     var connection = conn;
 
     var id = id;
     var data = data;
-    var status = status || 0;
+    var status = status || 'ready';
     var delay = delay || 0;
     var priority = priority || 0;
     var dateTime = dateTime || 'CURRENT_TIMESTAMP';
+    var timeToRun = timeToRun;
     var queueName = queueName;
 
     this.getId = function() {
@@ -21,19 +22,7 @@ function Message (conn, data, queueName, delay, priority, status, dateTime, id) 
     };
 
     this.getStatus = function() {
-        var stringStatus = '';
-        switch (status) {
-            case 0:
-                stringStatus = 'READY';
-                break;
-            case 1:
-                stringStatus = 'RESERVED';
-                break;
-            case 2:
-                stringStatus = 'BURIED';
-                break;
-        }
-        return stringStatus;
+        return status;
     };
 
     this.getDelay = function() {
@@ -46,6 +35,10 @@ function Message (conn, data, queueName, delay, priority, status, dateTime, id) 
 
     this.getDateTime = function() {
         return dateTime;
+    };
+
+    this.getTimeToRun = function() {
+        return timeToRun;
     };
 
     this.getQueueName = function() {
@@ -90,7 +83,7 @@ function Message (conn, data, queueName, delay, priority, status, dateTime, id) 
     }
 
     function buryMessage(message, cb) {
-        connection.query('UPDATE ?? SET status = 2 WHERE id = ?', [message.getQueueName(), message.getId()], cb);
+        connection.query('UPDATE ?? SET status = \'buried\' WHERE id = ?', [message.getQueueName(), message.getId()], cb);
     }
 
     function releaseMessage(message, cb) {

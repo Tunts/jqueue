@@ -20,14 +20,13 @@ function verifyIfQueueExists(queueName, cb) {
 function createNewQueue(queueName, cb) {
     connection.query('CREATE TABLE ?? (\
         id BIGINT NOT NULL AUTO_INCREMENT,\
-        status TINYINT NOT NULL,\
+        status ENUM(\'ready\', \'reserved\', \'buried\') NOT NULL,\
         data TEXT NOT NULL,\
         priority TINYINT NOT NULL,\
         date_time TIMESTAMP NOT NULL,\
+        time_to_run TIMESTAMP,\
         PRIMARY KEY (id))', [queueName], cb);
 }
-
-
 
 function init (ds, cb){
     var error = undefined;
