@@ -1,27 +1,59 @@
 var callBack = require('./callback').callBack;
-var connection;
 
-function Message (data, queueName, delay, priority, status, dateTime) {
+function Message (conn, data, queueName, delay, priority, status, dateTime, id) {
     var self = this;
+    var connection = conn;
 
-    this.id = undefined;
-    this.data = data;
-    this.status = status || 0;
-    this.delay = delay || 0;
-    this.priority = priority || 0;
-    this.dateTime = dateTime || 'CURRENT_TIMESTAMP';
-    this.queueName = queueName;
+    var id = id;
+    var data = data;
+    var status = status || 0;
+    var delay = delay || 0;
+    var priority = priority || 0;
+    var dateTime = dateTime || 'CURRENT_TIMESTAMP';
+    var queueName = queueName;
 
-    this._set = function (message) {
-        this.id = message.id;
-        this.data = message.data;
-        this.status = message.status;
-        this.priority = message.priority;
-        this.dateTime = message.date_time;
+    this.getId = function() {
+        return id;
+    };
+
+    this.getData = function() {
+        return data;
+    };
+
+    this.getStatus = function() {
+        var stringStatus = '';
+        switch (status) {
+            case 0:
+                stringStatus = 'READY';
+                break;
+            case 1:
+                stringStatus = 'RESERVED';
+                break;
+            case 2:
+                stringStatus = 'BURIED';
+                break;
+        }
+        return stringStatus;
+    };
+
+    this.getDelay = function() {
+        return delay;
+    };
+
+    this.getPriority = function() {
+        return priority;
+    };
+
+    this.getDateTime = function() {
+        return dateTime;
+    };
+
+    this.getQueueName = function() {
+        return queueName;
     };
 
     this.release = function(parameter1, parameter2) {
-        var delay, cb;
+        var cb;
         switch (arguments.length) {
             case 1:
                 cb = parameter1;
@@ -34,7 +66,6 @@ function Message (data, queueName, delay, priority, status, dateTime) {
         var response = function (error) {
             callBack(cb, error);
         };
-        self.delay = delay || 0;
         releaseMessage(self, response);
     };
 
@@ -53,24 +84,22 @@ function Message (data, queueName, delay, priority, status, dateTime) {
             callBack(cb, error);
         });
     };
+
+    function deleteMessage(message, cb) {
+        connection.query('DELETE FROM ?? WHERE id = ?',[message.getQueueName(), message.getId()] , cb);
+    }
+
+    function buryMessage(message, cb) {
+        connection.query('UPDATE ?? SET status = 2 WHERE id = ?', [message.getQueueName(), message.getId()], cb);
+    }
+
+    function releaseMessage(message, cb) {
+        connection.query('UPDATE ?? SET status = 0, \
+        date_time = DATE_ADD(date_time, INTERVAL ? SECOND) WHERE id = ?',
+            [message.getQueueName(), message.getDelay(), message.getId()], cb);
+    }
+
 }
 Message.constructor = Message;
 
-function deleteMessage(message, cb) {
-    connection.query('DELETE FROM ?? WHERE id = ?',[message.queueName,message.id] , cb);
-}
-
-function buryMessage(message, cb) {
-    connection.query('UPDATE ?? SET status = 2 WHERE id = ?', [message.queueName, message.id], cb);
-}
-
-function releaseMessage(message, cb) {
-    connection.query('UPDATE ?? SET status = 0, \
-        date_time = DATE_ADD(date_time, INTERVAL ? SECOND) WHERE id = ?',
-        [message.queueName, message.delay, message.id], cb);
-}
-
 exports.Message = Message;
-exports.setConncetion = function(conn) {
-    connection = conn;
-};

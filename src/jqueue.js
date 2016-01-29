@@ -1,20 +1,11 @@
-var queueProvider = require('./queue');
-var Queue = queueProvider.Queue;
+var Queue =  require('./queue').Queue;
+var JqueueException =  require('./exception').JqueueException;
 var callBack = require('./callback').callBack;
 
 var isConnected = false;
 var dataSource;
 var connection;
 var queues = {};
-
-function JqueueException (message, code) {
-    this.name = 'JqueueException';
-    this.code = code;
-    this.message = message;
-    this.stack = (new Error()).stack;
-}
-JqueueException.prototype = Object.create(Error.prototype);
-JqueueException.constructor = JqueueException;
 
 var verifyConnection = function() {
     if(!isConnected) {
@@ -23,17 +14,17 @@ var verifyConnection = function() {
 };
 
 function verifyIfQueueExists(queueName, cb) {
-    connection.query('SELECT 1 FROM ' + queueName + ' LIMIT 1', cb);
+    connection.query('SELECT 1 FROM ?? LIMIT 1', [queueName], cb);
 }
 
 function createNewQueue(queueName, cb) {
-    connection.query('CREATE TABLE '+ queueName +' (\
+    connection.query('CREATE TABLE ?? (\
         id BIGINT NOT NULL AUTO_INCREMENT,\
         status TINYINT NOT NULL,\
         data TEXT NOT NULL,\
         priority TINYINT NOT NULL,\
         date_time TIMESTAMP NOT NULL,\
-        PRIMARY KEY (id))', cb);
+        PRIMARY KEY (id))', [queueName], cb);
 }
 
 
@@ -50,7 +41,6 @@ function init (ds, cb){
             connection = conn;
             isConnected = true;
         }
-        queueProvider.setConncetion(conn);
         callBack(cb ,error, conn);
     });
 }
@@ -76,13 +66,13 @@ function use(queueName, cb) {
             if(error) {
                 createNewQueue(queueName, function(error) {
                     if(!error) {
-                        queue = new Queue(queueName);
+                        queue = new Queue(connection, queueName);
                         queues[queueName] = queue;
                     }
                     callBack(cb, error, queue);
                 })
             } else {
-                queue = new Queue(queueName);
+                queue = new Queue(connection, queueName);
                 queues[queueName] = queue;
                 callBack(cb, error, queue);
             }
