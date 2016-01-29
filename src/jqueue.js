@@ -1,3 +1,7 @@
+var queueProvider = require('./queue');
+var Queue = queueProvider.Queue;
+var callBack = require('./callback').callBack;
+
 var isConnected = false;
 var dataSource;
 var connection;
@@ -11,72 +15,6 @@ function JqueueException (message, code) {
 }
 JqueueException.prototype = Object.create(Error.prototype);
 JqueueException.constructor = JqueueException;
-
-function Message (data, queueName, status, delay, priority, dateTime) {
-    this.id = null;
-    this.data = data;
-    this.status = status || 0;
-    this.delay = delay || 0;
-    this.priority = priority || 0;
-    this.dateTime = dateTime || 'CURRENT_TIMESTAMP';
-    this.queueName = queueName;
-
-    this.release = function(delay) {
-        if(delay) {
-            //TODO release with delay
-        } else {
-            //TODO release
-        }
-    };
-
-    this.touch = function() {
-        //TODO touch
-    };
-
-    this.delete = function() {
-        //TODO delete
-    };
-
-    this.bury = function() {
-        //TODO bury
-    };
-}
-Message.prototype = Object.create(Object.prototype);
-Message.constructor = Message;
-
-function Queue (name) {
-    var self = this;
-    this.name = name;
-
-    this.put = function(message, cb) {
-        var queueMessage = new Message(message, self.name);
-        writeMessage(queueMessage, function(error, data) {
-            var insertedId = undefined;
-            if(!error) {
-                insertedId = data.insertId;
-            }
-            callBack(cb, error, insertedId);
-        });
-    };
-
-    this.reserve = function() {
-        //TODO reserve
-    };
-
-    this.watch = function() {
-        //TODO watch
-    };
-
-    this.kick = function(max) {
-        //TODO kick
-    };
-
-    this.kickMessage = function(id) {
-        //TODO kick
-    };
-}
-Queue.prototype = Object.create(Object.prototype);
-Queue.constructor = Queue;
 
 var verifyConnection = function() {
     if(!isConnected) {
@@ -98,18 +36,7 @@ function createNewQueue(queueName, cb) {
         PRIMARY KEY (id))', cb);
 }
 
-function writeMessage (message, cb) {
-    connection.query('INSERT INTO ' + message.queueName + ' (status, data, priority, date_time) \
-        VALUES ('+ message.status + ',\'' + message.data + '\',' + message.priority + ',' + message.dateTime + ')', cb)
-}
 
-function callBack(cb, error, data, other) {
-    try {
-        cb(error, data, other);
-    } catch (err){
-        console.log(err);
-    }
-}
 
 function init (ds, cb){
     var error = undefined;
@@ -123,6 +50,7 @@ function init (ds, cb){
             connection = conn;
             isConnected = true;
         }
+        queueProvider.setConncetion(conn);
         callBack(cb ,error, conn);
     });
 }
