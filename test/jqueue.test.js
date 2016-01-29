@@ -12,9 +12,12 @@ var dataSource = new db.DB(conncetionInfo);
 
 jqueue.init(dataSource, function() {
     jqueue.use('test',function(error, queue) {
-        queue.reserve(function(error, message) {
+        queue.put('TESTE COM DELAY DE 1 MIN', 60, function(error, data) {
+           console.log(error, data);
+        });
+        queue.watch(function(error, message) {
             if(message) {
-                message.release(120, function(error) {
+                message.release(function(error) {
                     console.log(error)
                 });
             }

@@ -1,8 +1,10 @@
 function callBack(cb, error, data, other) {
-    try {
-        cb(error, data, other);
-    } catch (err){
-        console.log(err);
+    if(cb) {
+        try {
+            cb(error, data, other);
+        } catch (err) {
+            console.log(err);
+        }
     }
 }
 

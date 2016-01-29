@@ -1,7 +1,7 @@
 var callBack = require('./callback').callBack;
 var connection;
 
-function Message (data, queueName, status, delay, priority, dateTime) {
+function Message (data, queueName, delay, priority, status, dateTime) {
     var self = this;
 
     this.id = undefined;
@@ -20,20 +20,22 @@ function Message (data, queueName, status, delay, priority, dateTime) {
         this.dateTime = message.date_time;
     };
 
-    this.release = function(delayOrCb, cb) {
-        var response = function (error) {
-            if(isNaN(delayOrCb)) {
-                callBack(delayOrCb, error);
-            } else {
-                callBack(cb, error);
-            }
-        };
-        if(isNaN(delayOrCb)) {
-            releaseMessage(self, response);
-        } else {
-            self.delay = delayOrCb;
-            releaseMessageWithDelay(self, response);
+    this.release = function(parameter1, parameter2) {
+        var delay, cb;
+        switch (arguments.length) {
+            case 1:
+                cb = parameter1;
+                break;
+            case 2:
+                delay = parameter1;
+                cb = parameter2;
+                break;
         }
+        var response = function (error) {
+            callBack(cb, error);
+        };
+        self.delay = delay || 0;
+        releaseMessage(self, response);
     };
 
     this.touch = function() {
@@ -41,29 +43,31 @@ function Message (data, queueName, status, delay, priority, dateTime) {
     };
 
     this.delete = function(cb) {
-        deleteMessage(self.queueName, self.id, function(error) {
+        deleteMessage(self, function(error) {
             callBack(cb, error);
         });
     };
 
-    this.bury = function() {
-        //TODO bury
+    this.bury = function(cb) {
+        buryMessage(self, function(error) {
+            callBack(cb, error);
+        });
     };
 }
-Message.prototype = Object.create(Object.prototype);
 Message.constructor = Message;
 
 function deleteMessage(message, cb) {
-    connection.query('DELETE FROM ' + message.queueName + ' WHERE id = ' + message.id, cb);
+    connection.query('DELETE FROM ?? WHERE id = ?',[message.queueName,message.id] , cb);
+}
+
+function buryMessage(message, cb) {
+    connection.query('UPDATE ?? SET status = 2 WHERE id = ?', [message.queueName, message.id], cb);
 }
 
 function releaseMessage(message, cb) {
-    connection.query('UPDATE ' + message.queueName + ' SET status = 0 WHERE id = ' + message.id, cb);
-}
-
-function releaseMessageWithDelay(message, cb) {
-    connection.query('UPDATE ' + message.queueName + ' SET status = 0, \
-        date_time = DATE_ADD(date_time, INTERVAL ' + message.delay + ' SECOND) WHERE id = ' + message.id, cb);
+    connection.query('UPDATE ?? SET status = 0, \
+        date_time = DATE_ADD(date_time, INTERVAL ? SECOND) WHERE id = ?',
+        [message.queueName, message.delay, message.id], cb);
 }
 
 exports.Message = Message;
