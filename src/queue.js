@@ -150,7 +150,7 @@ function Queue (conn, name) {
 
     function writeMessage (message, cb) {
         connection.query('INSERT INTO ?? (status, data, priority, date_time) \
-            VALUES (?,?,?,DATE_ADD(' + message.getDateTime() + ', INTERVAL ? SECOND))',
+            VALUES (?,?,?,DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND))',
             [message.getQueueName(), message.getStatus(), message.getData(), message.getPriority(), message.getDelay()], cb)
     }
 

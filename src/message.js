@@ -9,7 +9,7 @@ function Message (conn, data, queueName, delay, priority, status, dateTime, id, 
     var status = status || 'ready';
     var delay = delay || 0;
     var priority = priority || 0;
-    var dateTime = dateTime || 'CURRENT_TIMESTAMP';
+    var dateTime = dateTime || new Date();
     var timeToRun = timeToRun;
     var queueName = queueName;
 
