@@ -62,8 +62,10 @@ function Message (conn, data, queueName, delay, priority, status, dateTime, id, 
         releaseMessage(self, response);
     };
 
-    this.touch = function() {
-        //TODO touch
+    this.touch = function(cb) {
+        refreshMessage(self, function(error) {
+            callBack(cb, error);
+        });
     };
 
     this.delete = function(cb) {
@@ -83,13 +85,25 @@ function Message (conn, data, queueName, delay, priority, status, dateTime, id, 
     }
 
     function buryMessage(message, cb) {
-        connection.query('UPDATE ?? SET status = \'buried\' WHERE id = ?', [message.getQueueName(), message.getId()], cb);
+        connection.query('UPDATE ?? SET status = ? WHERE id = ?', [message.getQueueName(), 'buried', message.getId()], cb);
     }
 
     function releaseMessage(message, cb) {
-        connection.query('UPDATE ?? SET status = 0, \
-        date_time = DATE_ADD(date_time, INTERVAL ? SECOND) WHERE id = ?',
-            [message.getQueueName(), message.getDelay(), message.getId()], cb);
+        connection.query('UPDATE ?? SET status = ?, \
+        date_time = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) WHERE id = ?',
+            [message.getQueueName(), 'ready', message.getDelay(), message.getId()], cb);
+    }
+
+    function refreshMessage(message, cb) {
+        connection.query('SELECT id FROM ?? WHERE status = ? AND time_to_run >= CURRENT_TIMESTAMP AND id = ? FOR UPDATE',
+            [message.getQueueName(), 'reserved', message.getId()], function(error, data) {
+                if(data && !!data.length) {
+                    connection.query('UPDATE ?? SET time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) WHERE id = ?',
+                        [message.getQueueName(), message.getTimeToRun(), message.getId()], cb);
+                } else {
+                    cb({error: 'the reserve was lost'});
+                }
+           });
     }
 
 }

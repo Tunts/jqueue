@@ -24,7 +24,7 @@ function createNewQueue(queueName, cb) {
         data TEXT NOT NULL,\
         priority TINYINT NOT NULL,\
         date_time TIMESTAMP NOT NULL,\
-        time_to_run TIMESTAMP,\
+        time_to_run TIMESTAMP NULL DEFAULT NULL,\
         PRIMARY KEY (id))', [queueName], cb);
 }
 
