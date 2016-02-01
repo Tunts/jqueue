@@ -58,7 +58,7 @@ function Queue (conn, name) {
                 var messageObject = data[0];
                 message = new Message(connection, messageObject.data, self.getName(), 0,
                     messageObject.priority, messageObject.status,
-                    messageObject.date_time, messageObject.id, timeToRun);
+                    messageObject.date_time, messageObject.id, timeToRun, new Date(messageObject.time_to_run));
             }
             callBack(cb, error, message);
         });
@@ -161,11 +161,10 @@ function Queue (conn, name) {
             date_time asc LIMIT 1 FOR UPDATE',[queueName, 'ready', 'reserved'], function(error, data) {
             var message = data;
             if(!error && message && message.length) {
-                message[0].time_to_run = timeToRun;
                 message[0].status = 'reserved';
                 connection.query('UPDATE ?? SET status = ?, \
                 time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) WHERE id = ?',
-                    [queueName, message[0].status, message[0].time_to_run, message[0].id], function(error) {
+                    [queueName, message[0].status, timeToRun, message[0].id], function(error) {
                     callBack(cb, error, message);
                 });
             } else {

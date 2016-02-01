@@ -22,7 +22,7 @@ jqueue.init(dataSource, function() {
                             message.touch(function(error) {
                                 console.log('TOUCHED ',error);
                             });
-                        }, 3000);
+                        }, 1);
                     }
                 });
             //});
