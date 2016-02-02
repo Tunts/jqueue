@@ -58,7 +58,7 @@ function Queue (conn, name) {
                 var messageObject = data[0];
                 message = new Message(connection, messageObject.data, self.getName(), 0,
                     messageObject.priority, messageObject.status,
-                    messageObject.date_time, messageObject.id, timeToRun, new Date(messageObject.time_to_run));
+                    messageObject.date_time, messageObject.id, timeToRun);
             }
             callBack(cb, error, message);
         });
@@ -106,7 +106,7 @@ function Queue (conn, name) {
         var max, delay, cb;
         switch (arguments.length) {
             case 1:
-                cb: parameter1;
+                cb = parameter1;
                 break;
             case 2:
                 max = parameter1;
@@ -174,18 +174,18 @@ function Queue (conn, name) {
     }
 
     function kickMessages (queueName, max, delay, cb) {
-        connection.query('UPDATE ?? SET status = 0, date_time = DATE_ADD(date_time, INTERVAL ? SECOND) \
-            WHERE status = \'buried\' ORDER BY date_time asc LIMIT ?', [queueName, delay, max], cb);
+        connection.query('UPDATE ?? SET status = ?, date_time = DATE_ADD(date_time, INTERVAL ? SECOND) \
+            WHERE status = ? ORDER BY date_time asc LIMIT ?', [queueName, 'ready', delay, 'buried', max], cb);
     }
 
     function kickOneMessage (queueName, id, delay, cb) {
-        connection.query('UPDATE ?? SET status = 0, date_time = DATE_ADD(date_time, INTERVAL ? SECOND) \
-            WHERE status = \'buried\' AND id = ?', [queueName, delay, id], cb);
+        connection.query('UPDATE ?? SET status = ?, date_time = DATE_ADD(date_time, INTERVAL ? SECOND) \
+            WHERE status = ? AND id = ?', [queueName, 'ready', delay, 'buried', id], cb);
     }
 
     function kickAllMessages (queueName, delay, cb) {
-        connection.query('UPDATE ?? SET status = ?, date_time = DATE_ADD(date_time, INTERVAL ? SECOND) WHERE status = 2',
-            [queueName, 'ready', delay], cb);
+        connection.query('UPDATE ?? SET status = ?, date_time = DATE_ADD(date_time, INTERVAL ? SECOND) WHERE status = ?',
+            [queueName, 'ready', delay, 'buried'], cb);
     }
 
 }

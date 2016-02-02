@@ -1,6 +1,6 @@
 var callBack = require('./callback').callBack;
 
-function Message (conn, data, queueName, delay, priority, status, dateTime, id, timeToRun, timeToRunExpectation) {
+function Message (conn, data, queueName, delay, priority, status, dateTime, id, timeToRun) {
     var self = this;
     var connection = conn;
 
@@ -12,14 +12,6 @@ function Message (conn, data, queueName, delay, priority, status, dateTime, id, 
     var dateTime = dateTime || new Date();
     var timeToRun = timeToRun;
     var queueName = queueName;
-    var timeToRunExpectation = timeToRunExpectation || timeToRunExpectation;
-
-    var verifyState = function() {
-        connection.query('SELECT DATE_ADD(?, INTERVAL ? SECOND) AS time_to_run, CURRENT_TIMESTAMP AS now FROM ??',
-            [timeToRunExpectation, timeToRun, queueName], function(error, data) {
-                //TODO veirfy if is a valid message
-            });
-    };
 
     this.getId = function() {
         return id;
