@@ -13,19 +13,19 @@ var dataSource = new db.DB(conncetionInfo);
 jqueue.init(dataSource, function() {
     jqueue.use('test', true, function(error, queue) {
         if(queue) {
-            //queue.put('klalalallaa', function(error){
-                console.log(queue);
+            queue.put('klalalallaa', function(error){
+                console.log(error, queue);
                 queue.watch(function(error, message) {
-                    if(message) {
+                    if(error, message) {
                         console.log(message);
                         setTimeout(function() {
-                            message.touch(function(error) {
-                                console.log('TOUCHED ',error);
+                            message.release(function(error) {
+                                console.log('released',error);
                             });
                         }, 1);
                     }
                 });
-            //});
+            });
         } else {
             console.log(error);
         }

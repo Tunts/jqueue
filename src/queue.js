@@ -52,13 +52,14 @@ function Queue (conn, name) {
                 break;
         }
         timeToRun = timeToRun || defaultTimeToRun;
-        retrieveMessage(self.getName(), timeToRun, function(error, data) {
+        var version = Math.floor((Math.random() * 100000) + 1);
+        retrieveMessage(self.getName(), timeToRun, version, function(error, data) {
             var message = undefined;
             if(!error && data && data.length) {
                 var messageObject = data[0];
                 message = new Message(connection, messageObject.data, self.getName(), 0,
                     messageObject.priority, messageObject.status,
-                    messageObject.date_time, messageObject.id, timeToRun);
+                    messageObject.date_time, messageObject.id, timeToRun, version);
             }
             callBack(cb, error, message);
         });
@@ -154,7 +155,7 @@ function Queue (conn, name) {
             [message.getQueueName(), message.getStatus(), message.getData(), message.getPriority(), message.getDelay()], cb)
     }
 
-    function retrieveMessage (queueName, timeToRun, cb) {
+    function retrieveMessage (queueName, timeToRun, version, cb) {
         connection.query('SELECT * FROM ?? \
             WHERE (date_time <= CURRENT_TIMESTAMP AND status = ?) OR (time_to_run IS NOT NULL\
              AND time_to_run < CURRENT_TIMESTAMP AND status = ?) ORDER BY priority desc,\
@@ -162,9 +163,9 @@ function Queue (conn, name) {
             var message = data;
             if(!error && message && message.length) {
                 message[0].status = 'reserved';
-                connection.query('UPDATE ?? SET status = ?, \
+                connection.query('UPDATE ?? SET status = ?, version = ?, \
                 time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) WHERE id = ?',
-                    [queueName, message[0].status, timeToRun, message[0].id], function(error) {
+                    [queueName, message[0].status, version, timeToRun, message[0].id], function(error) {
                     callBack(cb, error, message);
                 });
             } else {

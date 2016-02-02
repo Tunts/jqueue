@@ -1,6 +1,6 @@
 var callBack = require('./callback').callBack;
 
-function Message (conn, data, queueName, delay, priority, status, dateTime, id, timeToRun) {
+function Message (conn, data, queueName, delay, priority, status, dateTime, id, timeToRun, version) {
     var self = this;
     var connection = conn;
 
@@ -9,9 +9,10 @@ function Message (conn, data, queueName, delay, priority, status, dateTime, id, 
     var status = status || 'ready';
     var delay = delay || 0;
     var priority = priority || 0;
-    var dateTime = dateTime || new Date();
+    var dateTime = dateTime;
     var timeToRun = timeToRun;
     var queueName = queueName;
+    var version = version;
 
     this.getId = function() {
         return id;
@@ -56,54 +57,58 @@ function Message (conn, data, queueName, delay, priority, status, dateTime, id, 
                 cb = parameter2;
                 break;
         }
-        var response = function (error) {
+        var response = function (error, data) {
+            error = verifyReserveError(error, data);
             callBack(cb, error);
         };
         releaseMessage(self, response);
     };
 
     this.touch = function(cb) {
-        refreshMessage(self, function(error) {
+        refreshMessage(self, function(error, data) {
+            error = verifyReserveError(error, data);
             callBack(cb, error);
         });
     };
 
     this.delete = function(cb) {
-        deleteMessage(self, function(error) {
+        deleteMessage(self, function(error, data) {
+            error = verifyReserveError(error, data);
             callBack(cb, error);
         });
     };
 
     this.bury = function(cb) {
-        buryMessage(self, function(error) {
+        buryMessage(self, function(error, data) {
+            error = verifyReserveError(error, data);
             callBack(cb, error);
         });
     };
 
     function deleteMessage(message, cb) {
-        connection.query('DELETE FROM ?? WHERE id = ?',[message.getQueueName(), message.getId()] , cb);
+        connection.query('DELETE FROM ?? WHERE id = ? AND version = ?', [message.getQueueName(), message.getId(), version] , cb);
     }
 
     function buryMessage(message, cb) {
-        connection.query('UPDATE ?? SET status = ? WHERE id = ?', [message.getQueueName(), 'buried', message.getId()], cb);
+        connection.query('UPDATE ?? SET status = ? WHERE id = ? AND version = ?', [message.getQueueName(), 'buried', message.getId(), version], cb);
     }
 
     function releaseMessage(message, cb) {
         connection.query('UPDATE ?? SET status = ?, \
-        date_time = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) WHERE id = ?',
-            [message.getQueueName(), 'ready', message.getDelay(), message.getId()], cb);
+        date_time = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) WHERE id = ? AND version = ?',
+            [message.getQueueName(), 'ready', message.getDelay(), message.getId(), version], cb);
     }
 
     function refreshMessage(message, cb) {
-        connection.query('SELECT id FROM ?? WHERE status = ? AND time_to_run >= CURRENT_TIMESTAMP AND id = ? FOR UPDATE',
-            [message.getQueueName(), 'reserved', message.getId()], function(error, data) {
-                if(data && !!data.length) {
-                    connection.query('UPDATE ?? SET time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) WHERE id = ?',
-                        [message.getQueueName(), message.getTimeToRun(), message.getId()], cb);
-                } else {
-                    cb({error: 'the reserve was lost'});
-                }
-           });
+        connection.query('UPDATE ?? SET time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) WHERE id = ? AND version = ?',
+            [message.getQueueName(), message.getTimeToRun(), message.getId(), version], cb);
+    }
+
+    function verifyReserveError(error, info) {
+        if(!error && info && !info.affectedRows) {
+            error = {error: 'the reserve was lost'};
+        }
+        return error;
     }
 
 }

@@ -31,6 +31,7 @@ function createNewQueue(queueName, isMemory, cb) {
         priority TINYINT NOT NULL,\
         date_time TIMESTAMP NOT NULL,\
         time_to_run TIMESTAMP NULL DEFAULT NULL,\
+        version INT NULL DEFAULT NULL,\
         PRIMARY KEY (id)) ENGINE = ??', [queueName, storageEngine], cb);
 }
 
