@@ -86,27 +86,30 @@ function Message (conn, data, queueName, delay, priority, status, dateTime, id, 
     };
 
     function deleteMessage(message, cb) {
-        connection.query('DELETE FROM ?? WHERE id = ? AND version = ?', [message.getQueueName(), message.getId(), version] , cb);
+        connection.query('DELETE FROM ?? WHERE id = ? AND version = ? AND time_to_run >= CURRENT_TIMESTAMP',
+            [message.getQueueName(), message.getId(), version] , cb);
     }
 
     function buryMessage(message, cb) {
-        connection.query('UPDATE ?? SET status = ? WHERE id = ? AND version = ?', [message.getQueueName(), 'buried', message.getId(), version], cb);
+        connection.query('UPDATE ?? SET status = ? WHERE id = ? AND version = ? AND time_to_run >= CURRENT_TIMESTAMP',
+            [message.getQueueName(), 'buried', message.getId(), version], cb);
     }
 
     function releaseMessage(message, cb) {
-        connection.query('UPDATE ?? SET status = ?, \
-        date_time = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) WHERE id = ? AND version = ?',
+        connection.query('UPDATE ?? SET status = ?, date_time = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) \
+             WHERE id = ? AND version = ? AND time_to_run >= CURRENT_TIMESTAMP',
             [message.getQueueName(), 'ready', message.getDelay(), message.getId(), version], cb);
     }
 
     function refreshMessage(message, cb) {
-        connection.query('UPDATE ?? SET time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) WHERE id = ? AND version = ?',
+        connection.query('UPDATE ?? SET time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) \
+            WHERE id = ? AND version = ? AND time_to_run >= CURRENT_TIMESTAMP',
             [message.getQueueName(), message.getTimeToRun(), message.getId(), version], cb);
     }
 
     function verifyReserveError(error, info) {
         if(!error && info && !info.affectedRows) {
-            error = {error: 'the reserve was lost'};
+            error = {error: 'This message is no longer available'};
         }
         return error;
     }

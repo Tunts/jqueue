@@ -121,6 +121,7 @@ function Queue (conn, name) {
         }
 
         var callback = function(error, data) {
+            data = data ? data.affectedRows : undefined;
             callBack(cb, error, data);
         };
 
