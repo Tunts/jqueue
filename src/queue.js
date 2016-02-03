@@ -1,7 +1,8 @@
 var callBack = require('./callback').callBack;
 var Message = require('./message').Message;
 
-var defaultWatchInterval = 1000;
+var defaultWatchInterval = 1000; //ms
+var defaultTimeToRun = 5; //s
 
 function Queue (conn, name) {
     var connection = conn;
@@ -39,51 +40,74 @@ function Queue (conn, name) {
         });
     };
 
-    this.reserve = function(cb) {
-        retrieveMessage(self.getName(), function(error, data) {
-            var message = undefined;
-            if(!error) {
-                if(data.length > 0) {
-                    var messageObject = data[0];
-                    message = new Message(connection, messageObject.data, self.getName(), 0,
-                        messageObject.priority, messageObject.status,
-                        messageObject.date_time, messageObject.id);
-                }
-            }
-            callBack(cb, error, message);
-        });
-    };
-
-    this.watch = function(parameter1, parameter2) {
-        var timeout, cb;
+    this.reserve = function(parameter1, parameter2) {
+        var cb, timeToRun;
         switch (arguments.length) {
             case 1:
                 cb = parameter1;
                 break;
             case 2:
-                timeout = parameter1;
+                timeToRun = parameter1;
                 cb = parameter2;
                 break;
         }
+        timeToRun = timeToRun || defaultTimeToRun;
+        var version = Math.floor((Math.random() * 100000) + 1);
+        retrieveMessage(self.getName(), timeToRun, version, function(error, data) {
+            var message = undefined;
+            if(!error && data && data.length) {
+                var messageObject = data[0];
+                message = new Message(connection, messageObject.data, self.getName(), 0,
+                    messageObject.priority, messageObject.status,
+                    messageObject.date_time, messageObject.id, timeToRun, version);
+            }
+            callBack(cb, error, message);
+        });
+    };
+
+    this.watch = function(parameter1, parameter2, parameter3) {
+        var timeout, timeToRun, cb;
+        switch (arguments.length) {
+            case 1:
+                cb = parameter1;
+                break;
+            case 2:
+                timeToRun = parameter1;
+                cb = parameter2;
+                break;
+            case 3:
+                timeToRun = parameter1;
+                timeout = parameter2;
+                cb = parameter3;
+                break;
+        }
         timeout = timeout || defaultWatchInterval;
-        var interval = setInterval(function(){
-            self.reserve(function(error, data) {
-                if(error || data) {
+        self.reserve(timeToRun, function(error, data) {
+            if(!error && !data) {
+                var interval = setInterval(function() {
+                    self.reserve(timeToRun, function(error, data) {
+                        if(error || data) {
+                            clearInterval(interval);
+                            callBack(cb, error, data);
+                        }
+                    });
+                }, timeout);
+                return function () {
                     clearInterval(interval);
-                    callBack(cb, error, data);
-                }
-            });
-        }, timeout);
-        return function () {
-            clearInterval(interval);
-        };
+                };
+            } else {
+                callBack(cb, error, data);
+                return function (){};
+            }
+        });
+
     };
 
     this.kick = function(parameter1, parameter2, parameter3) {
         var max, delay, cb;
         switch (arguments.length) {
             case 1:
-                cb: parameter1;
+                cb = parameter1;
                 break;
             case 2:
                 max = parameter1;
@@ -127,18 +151,21 @@ function Queue (conn, name) {
 
     function writeMessage (message, cb) {
         connection.query('INSERT INTO ?? (status, data, priority, date_time) \
-            VALUES (?,?,?,DATE_ADD(' + message.dateTime + ', INTERVAL ? SECOND))',
-            [message.queueName, message.status, message.data, message.priority, message.delay], cb)
+            VALUES (?,?,?,DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND))',
+            [message.getQueueName(), message.getStatus(), message.getData(), message.getPriority(), message.getDelay()], cb)
     }
 
-    function retrieveMessage (queueName, cb) {
+    function retrieveMessage (queueName, timeToRun, version, cb) {
         connection.query('SELECT * FROM ?? \
-            WHERE date_time <= CURRENT_TIMESTAMP AND status = 0 ORDER BY priority desc,\
-            date_time asc LIMIT 1 FOR UPDATE',[queueName], function(error, data) {
+            WHERE (date_time <= CURRENT_TIMESTAMP AND status = ?) OR (time_to_run IS NOT NULL\
+             AND time_to_run < CURRENT_TIMESTAMP AND status = ?) ORDER BY priority desc,\
+            date_time asc LIMIT 1 FOR UPDATE',[queueName, 'ready', 'reserved'], function(error, data) {
             var message = data;
-            if(!error && data && data.length) {
-                connection.query('UPDATE ?? SET status = 1 WHERE id = ?',
-                    [queueName, data[0].id], function(error) {
+            if(!error && message && message.length) {
+                message[0].status = 'reserved';
+                connection.query('UPDATE ?? SET status = ?, version = ?, \
+                time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) WHERE id = ?',
+                    [queueName, message[0].status, version, timeToRun, message[0].id], function(error) {
                     callBack(cb, error, message);
                 });
             } else {
@@ -148,18 +175,18 @@ function Queue (conn, name) {
     }
 
     function kickMessages (queueName, max, delay, cb) {
-        connection.query('UPDATE ?? SET status = 0, date_time = DATE_ADD(date_time, INTERVAL ? SECOND) \
-            WHERE status = 2 ORDER BY date_time asc LIMIT ?', [queueName, delay, max], cb);
+        connection.query('UPDATE ?? SET status = ?, date_time = DATE_ADD(date_time, INTERVAL ? SECOND) \
+            WHERE status = ? ORDER BY date_time asc LIMIT ?', [queueName, 'ready', delay, 'buried', max], cb);
     }
 
     function kickOneMessage (queueName, id, delay, cb) {
-        connection.query('UPDATE ?? SET status = 0, date_time = DATE_ADD(date_time, INTERVAL ? SECOND) \
-            WHERE status = 2 AND id = ?', [queueName, delay, id], cb);
+        connection.query('UPDATE ?? SET status = ?, date_time = DATE_ADD(date_time, INTERVAL ? SECOND) \
+            WHERE status = ? AND id = ?', [queueName, 'ready', delay, 'buried', id], cb);
     }
 
     function kickAllMessages (queueName, delay, cb) {
-        connection.query('UPDATE ?? SET status = 0, date_time = DATE_ADD(date_time, INTERVAL ? SECOND) WHERE status = 2',
-            [queueName, delay], cb);
+        connection.query('UPDATE ?? SET status = ?, date_time = DATE_ADD(date_time, INTERVAL ? SECOND) WHERE status = ?',
+            [queueName, 'ready', delay, 'buried'], cb);
     }
 
 }

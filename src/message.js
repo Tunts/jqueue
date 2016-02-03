@@ -1,16 +1,18 @@
 var callBack = require('./callback').callBack;
 
-function Message (conn, data, queueName, delay, priority, status, dateTime, id) {
+function Message (conn, data, queueName, delay, priority, status, dateTime, id, timeToRun, version) {
     var self = this;
     var connection = conn;
 
     var id = id;
     var data = data;
-    var status = status || 0;
+    var status = status || 'ready';
     var delay = delay || 0;
     var priority = priority || 0;
-    var dateTime = dateTime || 'CURRENT_TIMESTAMP';
+    var dateTime = dateTime;
+    var timeToRun = timeToRun;
     var queueName = queueName;
+    var version = version;
 
     this.getId = function() {
         return id;
@@ -21,19 +23,7 @@ function Message (conn, data, queueName, delay, priority, status, dateTime, id) 
     };
 
     this.getStatus = function() {
-        var stringStatus = '';
-        switch (status) {
-            case 0:
-                stringStatus = 'READY';
-                break;
-            case 1:
-                stringStatus = 'RESERVED';
-                break;
-            case 2:
-                stringStatus = 'BURIED';
-                break;
-        }
-        return stringStatus;
+        return status;
     };
 
     this.getDelay = function() {
@@ -46,6 +36,10 @@ function Message (conn, data, queueName, delay, priority, status, dateTime, id) 
 
     this.getDateTime = function() {
         return dateTime;
+    };
+
+    this.getTimeToRun = function() {
+        return timeToRun;
     };
 
     this.getQueueName = function() {
@@ -63,40 +57,58 @@ function Message (conn, data, queueName, delay, priority, status, dateTime, id) 
                 cb = parameter2;
                 break;
         }
-        var response = function (error) {
+        var response = function (error, data) {
+            error = verifyReserveError(error, data);
             callBack(cb, error);
         };
         releaseMessage(self, response);
     };
 
-    this.touch = function() {
-        //TODO touch
+    this.touch = function(cb) {
+        refreshMessage(self, function(error, data) {
+            error = verifyReserveError(error, data);
+            callBack(cb, error);
+        });
     };
 
     this.delete = function(cb) {
-        deleteMessage(self, function(error) {
+        deleteMessage(self, function(error, data) {
+            error = verifyReserveError(error, data);
             callBack(cb, error);
         });
     };
 
     this.bury = function(cb) {
-        buryMessage(self, function(error) {
+        buryMessage(self, function(error, data) {
+            error = verifyReserveError(error, data);
             callBack(cb, error);
         });
     };
 
     function deleteMessage(message, cb) {
-        connection.query('DELETE FROM ?? WHERE id = ?',[message.getQueueName(), message.getId()] , cb);
+        connection.query('DELETE FROM ?? WHERE id = ? AND version = ?', [message.getQueueName(), message.getId(), version] , cb);
     }
 
     function buryMessage(message, cb) {
-        connection.query('UPDATE ?? SET status = 2 WHERE id = ?', [message.getQueueName(), message.getId()], cb);
+        connection.query('UPDATE ?? SET status = ? WHERE id = ? AND version = ?', [message.getQueueName(), 'buried', message.getId(), version], cb);
     }
 
     function releaseMessage(message, cb) {
-        connection.query('UPDATE ?? SET status = 0, \
-        date_time = DATE_ADD(date_time, INTERVAL ? SECOND) WHERE id = ?',
-            [message.getQueueName(), message.getDelay(), message.getId()], cb);
+        connection.query('UPDATE ?? SET status = ?, \
+        date_time = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) WHERE id = ? AND version = ?',
+            [message.getQueueName(), 'ready', message.getDelay(), message.getId(), version], cb);
+    }
+
+    function refreshMessage(message, cb) {
+        connection.query('UPDATE ?? SET time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) WHERE id = ? AND version = ?',
+            [message.getQueueName(), message.getTimeToRun(), message.getId(), version], cb);
+    }
+
+    function verifyReserveError(error, info) {
+        if(!error && info && !info.affectedRows) {
+            error = {error: 'the reserve was lost'};
+        }
+        return error;
     }
 
 }

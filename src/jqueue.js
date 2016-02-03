@@ -17,17 +17,23 @@ function verifyIfQueueExists(queueName, cb) {
     connection.query('SELECT 1 FROM ?? LIMIT 1', [queueName], cb);
 }
 
-function createNewQueue(queueName, cb) {
+function createNewQueue(queueName, isMemory, cb) {
+    var storageEngine;
+    if(isMemory) {
+        storageEngine = 'MEMORY';
+    } else {
+        storageEngine = 'MyISAM';
+    }
     connection.query('CREATE TABLE ?? (\
         id BIGINT NOT NULL AUTO_INCREMENT,\
-        status TINYINT NOT NULL,\
-        data TEXT NOT NULL,\
+        status ENUM(\'ready\', \'reserved\', \'buried\') NOT NULL,\
+        data VARCHAR(4096) NOT NULL,\
         priority TINYINT NOT NULL,\
         date_time TIMESTAMP NOT NULL,\
-        PRIMARY KEY (id))', [queueName], cb);
+        time_to_run TIMESTAMP NULL DEFAULT NULL,\
+        version INT NULL DEFAULT NULL,\
+        PRIMARY KEY (id)) ENGINE = ??', [queueName, storageEngine], cb);
 }
-
-
 
 function init (ds, cb){
     var error = undefined;
@@ -56,15 +62,26 @@ function listAll (cb) {
     });
 }
 
-function use(queueName, cb) {
+function use(queueName, parameter1, parameter2) {
     verifyConnection();
+    var isMemory, cb;
+    switch (arguments.length) {
+        case 2:
+            isMemory = false;
+            cb = parameter1;
+            break;
+        case 3:
+            isMemory = !!parameter1;
+            cb = parameter2;
+            break;
+    }
     if(queues.hasOwnProperty(queueName)){
         return queues[queueName];
     } else {
         var queue = undefined;
         verifyIfQueueExists(queueName, function(error) {
             if(error) {
-                createNewQueue(queueName, function(error) {
+                createNewQueue(queueName, isMemory, function(error) {
                     if(!error) {
                         queue = new Queue(connection, queueName);
                         queues[queueName] = queue;
