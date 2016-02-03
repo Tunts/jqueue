@@ -61,50 +61,50 @@ function Message (conn, data, queueName, delay, priority, status, dateTime, id, 
             error = verifyReserveError(error, data);
             callBack(cb, error);
         };
-        releaseMessage(self, response);
+        releaseMessage(response);
     };
 
     this.touch = function(cb) {
-        refreshMessage(self, function(error, data) {
+        refreshMessage(function(error, data) {
             error = verifyReserveError(error, data);
             callBack(cb, error);
         });
     };
 
     this.delete = function(cb) {
-        deleteMessage(self, function(error, data) {
+        deleteMessage(function(error, data) {
             error = verifyReserveError(error, data);
             callBack(cb, error);
         });
     };
 
     this.bury = function(cb) {
-        buryMessage(self, function(error, data) {
+        buryMessage(function(error, data) {
             error = verifyReserveError(error, data);
             callBack(cb, error);
         });
     };
 
-    function deleteMessage(message, cb) {
+    function deleteMessage(cb) {
         connection.query('DELETE FROM ?? WHERE id = ? AND version = ? AND status = ? AND time_to_run >= CURRENT_TIMESTAMP',
-            [message.getQueueName(), message.getId(), version, 'reserved'] , cb);
+            [queueName, id, version, 'reserved'] , cb);
     }
 
-    function buryMessage(message, cb) {
+    function buryMessage(cb) {
         connection.query('UPDATE ?? SET status = ? WHERE id = ? AND version = ? AND status = ? AND time_to_run >= CURRENT_TIMESTAMP',
-            [message.getQueueName(), 'buried', message.getId(), version, 'reserved'], cb);
+            [queueName, 'buried', id, version, 'reserved'], cb);
     }
 
-    function releaseMessage(message, cb) {
+    function releaseMessage(cb) {
         connection.query('UPDATE ?? SET status = ?, date_time = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) \
              WHERE id = ? AND version = ? AND status = ? AND time_to_run >= CURRENT_TIMESTAMP',
-            [message.getQueueName(), 'ready', message.getDelay(), message.getId(), version, 'reserved'], cb);
+            [queueName, 'ready', delay, id, version, 'reserved'], cb);
     }
 
-    function refreshMessage(message, cb) {
+    function refreshMessage(cb) {
         connection.query('UPDATE ?? SET time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) \
             WHERE id = ? AND version = ? AND status = ? AND time_to_run >= CURRENT_TIMESTAMP',
-            [message.getQueueName(), message.getTimeToRun(), message.getId(), version, 'reserved'], cb);
+            [queueName, timeToRun, id, version, 'reserved'], cb);
     }
 
     function verifyReserveError(error, info) {

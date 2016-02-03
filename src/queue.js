@@ -30,7 +30,7 @@ function Queue (conn, name) {
                 break;
         }
 
-        var queueMessage = new Message(connection, message, self.getName(), delay, priority);
+        var queueMessage = new Message(connection, message, name, delay, priority);
         writeMessage(queueMessage, function(error, data) {
             var insertedId = undefined;
             if(!error) {
@@ -53,11 +53,11 @@ function Queue (conn, name) {
         }
         timeToRun = timeToRun || defaultTimeToRun;
         var version = Math.floor((Math.random() * 100000) + 1);
-        retrieveMessage(self.getName(), timeToRun, version, function(error, data) {
+        retrieveMessage(name, timeToRun, version, function(error, data) {
             var message = undefined;
             if(!error && data && data.length) {
                 var messageObject = data[0];
-                message = new Message(connection, messageObject.data, self.getName(), 0,
+                message = new Message(connection, messageObject.data, name, 0,
                     messageObject.priority, messageObject.status,
                     messageObject.date_time, messageObject.id, timeToRun, version);
             }
@@ -127,9 +127,9 @@ function Queue (conn, name) {
 
         delay = delay || 0;
         if(max) {
-            kickMessages(self.getName(), max, delay, callback);
+            kickMessages(name, max, delay, callback);
         } else {
-            kickAllMessages(self.getName(), delay, callback)
+            kickAllMessages(name, delay, callback)
         }
     };
 
@@ -145,7 +145,7 @@ function Queue (conn, name) {
                 break;
         }
         delay = delay || 0;
-        kickOneMessage(self.getName(), id, delay, function(error, data){
+        kickOneMessage(name, id, delay, function(error, data){
             callBack(cb, error, data);
         })
     };
