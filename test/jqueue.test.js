@@ -10,19 +10,26 @@ var conncetionInfo = {
 
 var dataSource = new db.DB(conncetionInfo);
 
-jqueue.init(dataSource, function() {
+jqueue = new jqueue.Jqueue(dataSource);
+
+jqueue.init(function() {
     jqueue.use('test', true, function(error, queue) {
         if(queue) {
             queue.put('klalalallaa', function(error){
                 console.log(error, queue);
                 queue.watch(function(error, message) {
-                    if(error, message) {
-                        console.log(message);
+                    console.log(error, message);
+                    if(!error && message) {
+                        setTimeout(function() {
+                            message.touch(function(error) {
+                                console.log('touched',error);
+                            });
+                        }, 3000);
                         setTimeout(function() {
                             message.release(function(error) {
                                 console.log('released',error);
                             });
-                        }, 1);
+                        }, 6000);
                     }
                 });
             });
