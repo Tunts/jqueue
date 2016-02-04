@@ -1,0 +1,30 @@
+{
+  "name": "jqueue",
+  "version": "0.1.1",
+  "description": "MySQL backed plugable Node.js job queue based on the Beanstalk Job Lifecycle",
+  "main": "src/jqueue.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tunts/jqueue.git"
+  },
+  "keywords": [
+    "queue",
+    "beanstalk",
+    "database-backed",
+    "mysql"
+  ],
+  "author": {
+    "name": "Tunts"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Tunts/jqueue/issues"
+  },
+  "homepage": "https://github.com/Tunts/jqueue#readme"
+}
