@@ -8,4 +8,4 @@ function callBack(cb, error, data, other) {
     }
 }
 
-exports.callBack = callBack;
+module.exports = callBack;

@@ -1,5 +1,5 @@
-var callBack = require('./callback').callBack;
-var Message = require('./message').Message;
+var callBack = require('./callback');
+var Message = require('./message');
 
 var defaultWatchInterval = 1000; //ms
 var defaultTimeToRun = 5; //s
@@ -193,4 +193,4 @@ function Queue (conn, name) {
 }
 Queue.constructor = Queue;
 
-exports.Queue = Queue;
+module.exports = Queue;

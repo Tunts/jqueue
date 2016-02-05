@@ -1,7 +1,6 @@
-var Queue =  require('./queue').Queue;
-var JqueueException =  require('./exception').JqueueException;
-var callBack = require('./callback').callBack;
-
+var Queue =  require('./queue');
+var JqueueException =  require('./exception');
+var callBack = require('./callback');
 
 function Jqueue(ds) {
 
@@ -117,4 +116,4 @@ function Jqueue(ds) {
 }
 Jqueue.constructor = Jqueue;
 
-exports.Jqueue = Jqueue;
+module.exports = Jqueue;
