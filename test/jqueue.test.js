@@ -13,7 +13,7 @@ var dataSource = new db.DB(conncetionInfo);
 jqueue = new jqueue.Jqueue(dataSource);
 
 jqueue.init(function() {
-    jqueue.use('test', true, function(error, queue) {
+    jqueue.use('test', false, function(error, queue) {
         if(queue) {
             queue.put('klalalallaa', function(error){
                 console.log(error, queue);

@@ -65,17 +65,24 @@ function Jqueue(ds) {
         });
     }
 
-    function use(queueName, parameter1, parameter2) {
+    function use(queueName, parameter1, parameter2, parameter3) {
         verifyConnection();
-        var isMemory, cb;
+        var noCreate, isMemory, cb;
         switch (arguments.length) {
             case 2:
+                noCreate = false;
                 isMemory = false;
                 cb = parameter1;
                 break;
             case 3:
-                isMemory = !!parameter1;
+                noCreate = !!parameter1;
+                isMemory = false;
                 cb = parameter2;
+                break;
+            case 4:
+                noCreate = !!parameter1;
+                isMemory = !!parameter2;
+                cb = parameter3;
                 break;
         }
         if (queues.hasOwnProperty(queueName)) {
@@ -84,19 +91,23 @@ function Jqueue(ds) {
             var queue = undefined;
             verifyIfQueueExists(queueName, function (error) {
                 if (error) {
-                    createNewQueue(queueName, isMemory, function (error) {
-                        if (!error) {
-                            queue = new Queue(connection, queueName);
-                            queues[queueName] = queue;
-                        }
-                        callBack(cb, error, queue);
-                    })
+                    if(noCreate) {
+                        callBack(cb, error);
+                    } else {
+                        createNewQueue(queueName, isMemory, function (error) {
+                            if (!error) {
+                                queue = new Queue(connection, queueName);
+                                queues[queueName] = queue;
+                            }
+                            callBack(cb, error, queue);
+                        })
+                    }
                 } else {
                     queue = new Queue(connection, queueName);
                     queues[queueName] = queue;
                     callBack(cb, error, queue);
                 }
-            })
+            });
         }
     }
 
