@@ -113,11 +113,114 @@ describe('jqueue:', function() {
 
         jqueue.init();
 
-        jqueue.use('test', callback);
+        jqueue.use('test', false, callback);
 
         expect(callbackMock.withArgs(callback,
             sinon.match.object,
             undefined).calledOnce).to.be.true;
+
+    });
+
+    it('should use sucess and create memory', function() {
+
+        var first = true;
+
+        var connection = {
+            query: function(query, params, cb) {
+                if(first) {
+                    first = false;
+                    cb({error:'fuuuu'});
+                } else {
+                    cb(null);
+                }
+            }
+        };
+
+        var dataSource = {
+            connect: function(cb) {
+                cb(connection);
+            }
+        };
+
+        var jqueue = new Jqueue(dataSource);
+
+        var callback = function(){};
+
+        jqueue.init();
+
+        jqueue.use('test', false, true, callback);
+
+        expect(callbackMock.withArgs(callback,
+            null,
+            sinon.match.object).calledOnce).to.be.true;
+
+    });
+
+    it('should use fail not create', function() {
+
+        var connection = {
+            query: function(query, params, cb) {
+                cb({error:'fuuuu'});
+            }
+        };
+
+        var dataSource = {
+            connect: function(cb) {
+                cb(connection);
+            }
+        };
+
+        var jqueue = new Jqueue(dataSource);
+
+        var callback = function(){};
+
+        jqueue.init();
+
+        jqueue.use('testing', true, callback);
+
+        expect(callbackMock.withArgs(callback,
+            sinon.match.object).calledOnce).to.be.true;
+
+    });
+
+    it('should use already created', function() {
+
+        var calls = 1;
+
+        var connection = {
+            query: function(query, params, cb) {
+                switch(calls) {
+                    case 2:
+                        calls++;
+                        cb(false);
+                        break;
+                    default:
+                        calls++;
+                        cb(true);
+                        break;
+                }
+            }
+        };
+
+        var dataSource = {
+            connect: function(cb) {
+                cb(connection);
+            }
+        };
+
+        var jqueue = new Jqueue(dataSource);
+
+        var callback = function(){};
+
+        jqueue.init();
+
+        jqueue.use('test', callback);
+
+        jqueue.use('test', callback);
+
+        expect(callbackMock.withArgs(callback,
+            null,
+            sinon.match.object).calledOnce).to.be.true;
 
     });
 
