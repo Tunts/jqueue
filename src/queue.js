@@ -82,6 +82,9 @@ function Queue (conn, name) {
                 break;
         }
         timeout = timeout || defaultWatchInterval;
+        var watcher = {
+            cancel: function() {}
+        };
         self.reserve(timeToRun, function(error, data) {
             if(!error && !data) {
                 var interval = setInterval(function() {
@@ -92,14 +95,14 @@ function Queue (conn, name) {
                         }
                     });
                 }, timeout);
-                return function () {
+                watcher.cancel = function () {
                     clearInterval(interval);
                 };
             } else {
                 callBack(cb, error, data);
-                return function (){};
             }
         });
+        return watcher;
 
     };
 
@@ -167,10 +170,10 @@ function Queue (conn, name) {
                 connection.query('UPDATE ?? SET status = ?, version = ?, \
                 time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) WHERE id = ?',
                     [queueName, message[0].status, version, timeToRun, message[0].id], function(error) {
-                    callBack(cb, error, message);
+                        cb(error, message);
                 });
             } else {
-                callBack(cb, error, message);
+                cb(error, message);
             }
         });
     }
