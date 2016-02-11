@@ -1,4 +1,4 @@
-var callBack = require('./callback').callBack;
+var callBack = require('./callback');
 
 function Message (conn, data, queueName, delay, priority, status, dateTime, id, timeToRun, version) {
     var self = this;
@@ -117,4 +117,4 @@ function Message (conn, data, queueName, delay, priority, status, dateTime, id, 
 }
 Message.constructor = Message;
 
-exports.Message = Message;
+module.exports = Message;

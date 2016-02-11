@@ -10,7 +10,7 @@ var conncetionInfo = {
 
 var dataSource = new db.DB(conncetionInfo);
 
-jqueue = new jqueue.Jqueue(dataSource);
+jqueue = new jqueue(dataSource);
 
 jqueue.init(function() {
     jqueue.use('test', false, function(error, queue) {

@@ -1,7 +1,6 @@
-var Queue =  require('./queue').Queue;
-var JqueueException =  require('./exception').JqueueException;
-var callBack = require('./callback').callBack;
-
+var Queue =  require('./queue');
+var JqueueException =  require('./exception');
+var callBack = require('./callback');
 
 function Jqueue(ds) {
 
@@ -54,17 +53,6 @@ function Jqueue(ds) {
         });
     }
 
-    function listAll(cb) {
-        verifyConnection();
-        var queueList = [];
-        connection.query('SHOW TABLES', function (error, rows, fields) {
-            for (var ix in rows) {
-                queueList.push(rows[ix].Tables_in_jqueue);
-            }
-            callBack(cb, error, queueList);
-        });
-    }
-
     function use(queueName, parameter1, parameter2, parameter3) {
         verifyConnection();
         var noCreate, isMemory, cb;
@@ -86,7 +74,7 @@ function Jqueue(ds) {
                 break;
         }
         if (queues.hasOwnProperty(queueName)) {
-            return queues[queueName];
+            callBack(cb, null, queues[queueName]);
         } else {
             var queue = undefined;
             verifyIfQueueExists(queueName, function (error) {
@@ -112,9 +100,8 @@ function Jqueue(ds) {
     }
 
     this.init = init;
-    this.listAll = listAll;
     this.use = use;
 }
 Jqueue.constructor = Jqueue;
 
-exports.Jqueue = Jqueue;
+module.exports = Jqueue;

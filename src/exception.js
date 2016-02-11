@@ -7,4 +7,4 @@ function JqueueException (message, code) {
 JqueueException.prototype = Object.create(Error.prototype);
 JqueueException.constructor = JqueueException;
 
-exports.JqueueException = JqueueException;
+module.exports = JqueueException;
