@@ -79,4 +79,166 @@ describe('message:', function() {
         expect(message.getQueueName()).to.equal(queueName);
     });
 
+    it('should release a message', function() {
+
+        var conn = {
+            query: function(query, params, cb) {
+                cb(null, {affectedRows: 1});
+            }
+        };
+
+        var message = new Message(conn);
+
+        var callback = function() {};
+
+        message.release(callback);
+
+        expect(callbackMock.withArgs(callback, null).calledOnce).to.be.true;
+
+    });
+
+    it('should release a message with delay', function() {
+
+        var conn = {
+            query: function(query, params, cb) {
+                cb(null, {affectedRows: 1});
+            }
+        };
+
+        var message = new Message(conn);
+
+        var callback = function() {};
+
+        message.release(10, callback);
+
+        expect(callbackMock.withArgs(callback, null).calledOnce).to.be.true;
+
+    });
+
+    it('should fail to release a message', function() {
+
+        var conn = {
+            query: function(query, params, cb) {
+                cb(null, {affectedRows: 0});
+            }
+        };
+
+        var message = new Message(conn);
+
+        var callback = function() {};
+
+        message.release(callback);
+
+        expect(callbackMock.withArgs(callback, sinon.match.object).calledOnce).to.be.true;
+
+    });
+
+    it('should touch message', function() {
+
+        var conn = {
+            query: function(query, params, cb) {
+                cb(null, {affectedRows: 1});
+            }
+        };
+
+        var message = new Message(conn);
+
+        var callback = function() {};
+
+        message.touch(callback);
+
+        expect(callbackMock.withArgs(callback, null).calledOnce).to.be.true;
+
+    });
+
+    it('should not touch a message', function() {
+
+        var conn = {
+            query: function(query, params, cb) {
+                cb(null, {affectedRows: 0});
+            }
+        };
+
+        var message = new Message(conn);
+
+        var callback = function() {};
+
+        message.touch(callback);
+
+        expect(callbackMock.withArgs(callback, sinon.match.object).calledOnce).to.be.true;
+
+    });
+
+    it('should delete message', function() {
+
+        var conn = {
+            query: function(query, params, cb) {
+                cb(null, {affectedRows: 1});
+            }
+        };
+
+        var message = new Message(conn);
+
+        var callback = function() {};
+
+        message.delete(callback);
+
+        expect(callbackMock.withArgs(callback, null).calledOnce).to.be.true;
+
+    });
+
+    it('should not delete a message', function() {
+
+        var conn = {
+            query: function(query, params, cb) {
+                cb(null, {affectedRows: 0});
+            }
+        };
+
+        var message = new Message(conn);
+
+        var callback = function() {};
+
+        message.delete(callback);
+
+        expect(callbackMock.withArgs(callback, sinon.match.object).calledOnce).to.be.true;
+
+    });
+
+    it('should bury message', function() {
+
+        var conn = {
+            query: function(query, params, cb) {
+                cb(null, {affectedRows: 1});
+            }
+        };
+
+        var message = new Message(conn);
+
+        var callback = function() {};
+
+        message.bury(callback);
+
+        expect(callbackMock.withArgs(callback, null).calledOnce).to.be.true;
+
+    });
+
+    it('should not bury a message', function() {
+
+        var conn = {
+            query: function(query, params, cb) {
+                cb(null, {affectedRows: 0});
+            }
+        };
+
+        var message = new Message(conn);
+
+        var callback = function() {};
+
+        message.bury(callback);
+
+        expect(callbackMock.withArgs(callback, sinon.match.object).calledOnce).to.be.true;
+
+    });
+
 });
