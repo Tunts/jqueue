@@ -1,5 +1,3 @@
-Welcome to the jqueue wiki!
-
 # Getting Started
 
 ## Import module
