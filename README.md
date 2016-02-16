@@ -1,21 +1,17 @@
-jqueue
-======
-
-Plugable Node.js job queue based on the Beanstalk Job Lifecycle
+Welcome to the jqueue wiki!
 
 # Getting Started
 
 ## Import module
 ```javascript
-  var jqueueClient = require('jqueue');
+  var Jqueue = require('jqueue');
 ```
 
-## Init jqueue
+## Create jqueue
 - dependency: [node-mysql] (https://www.npmjs.com/package/node-mysql)
 
-**Important:** It's necessary call init before call any other method!
 ```javascript
-  var jqueueClient = require('jqueue');
+  var Jqueue = require('jqueue');
   var db = require('node-mysql');
     
   var conncetionInfo = {
@@ -27,13 +23,7 @@ Plugable Node.js job queue based on the Beanstalk Job Lifecycle
 
   var dataSource = new db.DB(conncetionInfo);
 
-  var jqueue = new jqueueClient.Jqueue(dataSource);
-
-  jqueue.init(function(error) {
-    if(!error) {
-      console.log('I am alive!');
-    }
-  });
+  var jqueue = new Jqueue(dataSource);
 ```
 
 ## Use
@@ -90,14 +80,6 @@ Plugable Node.js job queue based on the Beanstalk Job Lifecycle
     }
   });
 ```
-
-# Queue
-
-  [See Queue Object documentation] (queue)
-
-# Message
-
-  [See Message Object documentation] (message)
 
 # Callbacks standard 
 
