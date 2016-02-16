@@ -1,8 +1,8 @@
 var callBack = require('./callback');
 
-function Message (conn, data, queueName, delay, priority, status, dateTime, id, timeToRun, version) {
+function Message (dataSource, data, queueName, delay, priority, status, dateTime, id, timeToRun, version) {
     var self = this;
-    var connection = conn;
+    var dataSource = dataSource;
 
     var id = id;
     var data = data;
@@ -85,24 +85,35 @@ function Message (conn, data, queueName, delay, priority, status, dateTime, id, 
         });
     };
 
+    function execQuery(query, params, cb) {
+        dataSource.getConnection(function(error, connection) {
+            if(error) {
+                cb(error);
+            } else {
+                connection.query(query, params, cb);
+                connection.release();
+            }
+        });
+    }
+
     function deleteMessage(cb) {
-        connection.query('DELETE FROM ?? WHERE id = ? AND version = ? AND status = ? AND time_to_run >= CURRENT_TIMESTAMP',
+        execQuery('DELETE FROM ?? WHERE id = ? AND version = ? AND status = ? AND time_to_run >= CURRENT_TIMESTAMP',
             [queueName, id, version, 'reserved'] , cb);
     }
 
     function buryMessage(cb) {
-        connection.query('UPDATE ?? SET status = ? WHERE id = ? AND version = ? AND status = ? AND time_to_run >= CURRENT_TIMESTAMP',
+        execQuery('UPDATE ?? SET status = ? WHERE id = ? AND version = ? AND status = ? AND time_to_run >= CURRENT_TIMESTAMP',
             [queueName, 'buried', id, version, 'reserved'], cb);
     }
 
     function releaseMessage(cb) {
-        connection.query('UPDATE ?? SET status = ?, date_time = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) \
+        execQuery('UPDATE ?? SET status = ?, date_time = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) \
              WHERE id = ? AND version = ? AND status = ? AND time_to_run >= CURRENT_TIMESTAMP',
             [queueName, 'ready', delay, id, version, 'reserved'], cb);
     }
 
     function refreshMessage(cb) {
-        connection.query('UPDATE ?? SET time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) \
+        execQuery('UPDATE ?? SET time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) \
             WHERE id = ? AND version = ? AND status = ? AND time_to_run >= CURRENT_TIMESTAMP',
             [queueName, timeToRun, id, version, 'reserved'], cb);
     }

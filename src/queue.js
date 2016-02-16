@@ -4,10 +4,21 @@ var Message = require('./message');
 var defaultWatchInterval = 1000; //ms
 var defaultTimeToRun = 5; //s
 
-function Queue (conn, name) {
-    var connection = conn;
+function Queue (dataSource, name) {
+    var dataSource = dataSource;
     var self = this;
     var name = name;
+
+    function execQuery(query, params, cb) {
+        dataSource.getConnection(function(error, connection) {
+            if(error) {
+                cb(error);
+            } else {
+                connection.query(query, params, cb);
+                connection.release();
+            }
+        });
+    }
 
     this.getName = function() {
         return name;
@@ -30,7 +41,7 @@ function Queue (conn, name) {
                 break;
         }
 
-        var queueMessage = new Message(connection, message, name, delay, priority);
+        var queueMessage = new Message(dataSource, message, name, delay, priority);
         writeMessage(queueMessage, function(error, data) {
             var insertedId = undefined;
             if(!error) {
@@ -57,7 +68,7 @@ function Queue (conn, name) {
             var message = undefined;
             if(!error && data && data.length) {
                 var messageObject = data[0];
-                message = new Message(connection, messageObject.data, name, 0,
+                message = new Message(dataSource, messageObject.data, name, 0,
                     messageObject.priority, messageObject.status,
                     messageObject.date_time, messageObject.id, timeToRun, version);
             }
@@ -154,42 +165,49 @@ function Queue (conn, name) {
     };
 
     function writeMessage (message, cb) {
-        connection.query('INSERT INTO ?? (status, data, priority, date_time) \
+        execQuery('INSERT INTO ?? (status, data, priority, date_time) \
             VALUES (?,?,?,DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND))',
             [message.getQueueName(), message.getStatus(), message.getData(), message.getPriority(), message.getDelay()], cb)
     }
 
     function retrieveMessage (queueName, timeToRun, version, cb) {
-        connection.query('SELECT * FROM ?? \
+        dataSource.getConnection(function(error, connection) {
+            if(error) {
+                cb(error);
+            } else {
+                connection.query('SELECT * FROM ?? \
             WHERE (date_time <= CURRENT_TIMESTAMP AND status = ?) OR (time_to_run IS NOT NULL\
              AND time_to_run < CURRENT_TIMESTAMP AND status = ?) ORDER BY priority desc,\
-            date_time asc LIMIT 1 FOR UPDATE',[queueName, 'ready', 'reserved'], function(error, data) {
-            var message = data;
-            if(!error && message && message.length) {
-                message[0].status = 'reserved';
-                connection.query('UPDATE ?? SET status = ?, version = ?, \
+            date_time asc LIMIT 1 FOR UPDATE', [queueName, 'ready', 'reserved'], function (error, data) {
+                    var message = data;
+                    if (!error && message && message.length) {
+                        message[0].status = 'reserved';
+                        connection.query('UPDATE ?? SET status = ?, version = ?, \
                 time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) WHERE id = ?',
-                    [queueName, message[0].status, version, timeToRun, message[0].id], function(error) {
+                            [queueName, message[0].status, version, timeToRun, message[0].id], function (error) {
+                                cb(error, message);
+                            });
+                    } else {
                         cb(error, message);
+                    }
                 });
-            } else {
-                cb(error, message);
+                connection.release();
             }
         });
     }
 
     function kickMessages (queueName, max, delay, cb) {
-        connection.query('UPDATE ?? SET status = ?, date_time = DATE_ADD(date_time, INTERVAL ? SECOND) \
+        execQuery('UPDATE ?? SET status = ?, date_time = DATE_ADD(date_time, INTERVAL ? SECOND) \
             WHERE status = ? ORDER BY date_time asc LIMIT ?', [queueName, 'ready', delay, 'buried', max], cb);
     }
 
     function kickOneMessage (queueName, id, delay, cb) {
-        connection.query('UPDATE ?? SET status = ?, date_time = DATE_ADD(date_time, INTERVAL ? SECOND) \
+        execQuery('UPDATE ?? SET status = ?, date_time = DATE_ADD(date_time, INTERVAL ? SECOND) \
             WHERE status = ? AND id = ?', [queueName, 'ready', delay, 'buried', id], cb);
     }
 
     function kickAllMessages (queueName, delay, cb) {
-        connection.query('UPDATE ?? SET status = ?, date_time = DATE_ADD(date_time, INTERVAL ? SECOND) WHERE status = ?',
+        execQuery('UPDATE ?? SET status = ?, date_time = DATE_ADD(date_time, INTERVAL ? SECOND) WHERE status = ?',
             [queueName, 'ready', delay, 'buried'], cb);
     }
 

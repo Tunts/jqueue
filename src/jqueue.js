@@ -5,19 +5,22 @@ var callBack = require('./callback');
 function Jqueue(ds) {
 
     var dataSource = ds;
-    var isConnected = false;
     var dataSource;
-    var connection;
     var queues = {};
 
-    var verifyConnection = function () {
-        if (!isConnected) {
-            throw new JqueueException('Jqueue is not connected, please use init to connect to the database', 0);
-        }
-    };
+    function execQuery(query, params, cb) {
+        dataSource.getConnection(function(error, connection) {
+            if(error) {
+                cb(error);
+            } else {
+                connection.query(query, params, cb);
+                connection.release();
+            }
+        });
+    }
 
     function verifyIfQueueExists(queueName, cb) {
-        connection.query('SELECT 1 FROM ?? LIMIT 1', [queueName], cb);
+        execQuery('SELECT 1 FROM ?? LIMIT 1', [queueName], cb);
     }
 
     function createNewQueue(queueName, isMemory, cb) {
@@ -27,7 +30,7 @@ function Jqueue(ds) {
         } else {
             storageEngine = 'MyISAM';
         }
-        connection.query('CREATE TABLE ?? (\
+        execQuery('CREATE TABLE ?? (\
         id BIGINT NOT NULL AUTO_INCREMENT,\
         status ENUM(\'ready\', \'reserved\', \'buried\') NOT NULL,\
         data VARCHAR(4096) NOT NULL,\
@@ -38,23 +41,7 @@ function Jqueue(ds) {
         PRIMARY KEY (id)) ENGINE = ??', [queueName, storageEngine], cb);
     }
 
-    function init(cb) {
-        var error = undefined;
-        dataSource.connect(function (conn) {
-            if (!conn) {
-                error = {
-                    message: 'connection fail'
-                };
-            } else {
-                connection = conn;
-                isConnected = true;
-            }
-            callBack(cb, error, conn);
-        });
-    }
-
     function use(queueName, parameter1, parameter2, parameter3) {
-        verifyConnection();
         var noCreate, isMemory, cb;
         switch (arguments.length) {
             case 2:
@@ -84,14 +71,14 @@ function Jqueue(ds) {
                     } else {
                         createNewQueue(queueName, isMemory, function (error) {
                             if (!error) {
-                                queue = new Queue(connection, queueName);
+                                queue = new Queue(dataSource, queueName);
                                 queues[queueName] = queue;
                             }
                             callBack(cb, error, queue);
                         })
                     }
                 } else {
-                    queue = new Queue(connection, queueName);
+                    queue = new Queue(dataSource, queueName);
                     queues[queueName] = queue;
                     callBack(cb, error, queue);
                 }
@@ -99,7 +86,6 @@ function Jqueue(ds) {
         }
     }
 
-    this.init = init;
     this.use = use;
 }
 Jqueue.constructor = Jqueue;

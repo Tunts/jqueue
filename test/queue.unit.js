@@ -46,13 +46,20 @@ describe('queue:', function() {
 
     it('should put a message', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, {insertId: 123});
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
-        var queue = new Queue(conn, 'test');
+        var queue = new Queue(dataSource, 'test');
 
         var callback = function() {};
 
@@ -63,15 +70,48 @@ describe('queue:', function() {
 
     });
 
-    it('should fail to put a message', function() {
+    it('should connection fail when put a message', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, {insertId: 123});
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb({error: 'error'});
             }
         };
 
-        var queue = new Queue(conn, 'test');
+        var queue = new Queue(dataSource, 'test');
+
+        var callback = function() {};
+
+        queue.put('this is a test message', callback);
+
+        expect(callbackMock.withArgs(callback, sinon.match.object,
+            undefined).calledOnce).to.be.true;
+
+    });
+
+    it('should fail to put a message', function() {
+
+        var connection = {
+            query: function(query, params, cb) {
+                cb(null, {insertId: 123});
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
+            }
+        };
+
+        var queue = new Queue(dataSource, 'test');
 
         var callback = function() {};
 
@@ -84,13 +124,20 @@ describe('queue:', function() {
 
     it('should put a message with delay and priority', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb({error: 'error'}, undefined);
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
-        var queue = new Queue(conn, 'test');
+        var queue = new Queue(dataSource, 'test');
 
         var callback = function() {};
 
@@ -103,13 +150,20 @@ describe('queue:', function() {
 
     it('should reserve a message', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, [{}]);
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
-        var queue = new Queue(conn, 'test');
+        var queue = new Queue(dataSource, 'test');
 
         var callback = function() {};
 
@@ -120,15 +174,48 @@ describe('queue:', function() {
 
     });
 
-    it('should not reserve a message', function() {
+    it('should fail connection when reserve a message', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
-                cb({error: 'error'}, undefined);
+                cb(null, [{}]);
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb({error: 'error'});
             }
         };
 
-        var queue = new Queue(conn, 'test');
+        var queue = new Queue(dataSource, 'test');
+
+        var callback = function() {};
+
+        queue.reserve(callback);
+
+        expect(callbackMock.withArgs(callback, sinon.match.object,
+            undefined).calledOnce).to.be.true;
+
+    });
+
+    it('should not reserve a message', function() {
+
+        var connection = {
+            query: function(query, params, cb) {
+                cb({error: 'error'}, undefined);
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
+            }
+        };
+
+        var queue = new Queue(dataSource, 'test');
 
         var callback = function() {};
 
@@ -141,13 +228,20 @@ describe('queue:', function() {
 
     it('should watch a message', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, [{}]);
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
-        var queue = new Queue(conn, 'test');
+        var queue = new Queue(dataSource, 'test');
 
         queue.reserve = function(timeToRun, cb) {
             cb(null, {data:123});
@@ -164,13 +258,20 @@ describe('queue:', function() {
 
     it('should not cancel and watch a message', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, [{}]);
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
-        var queue = new Queue(conn, 'test');
+        var queue = new Queue(dataSource, 'test');
 
         queue.reserve = function(timeToRun, cb) {
             cb(null, {data:123});
@@ -188,15 +289,22 @@ describe('queue:', function() {
 
     it('should watch a message with interval', function(done) {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, [{}]);
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
         var first = true;
 
-        var queue = new Queue(conn, 'test');
+        var queue = new Queue(dataSource, 'test');
 
         queue.reserve = function(timeToRun, cb) {
             if(first) {
@@ -221,15 +329,22 @@ describe('queue:', function() {
 
     it('should watch and cancel interval', function(done) {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, [{}]);
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
         var first = true;
 
-        var queue = new Queue(conn, 'test');
+        var queue = new Queue(dataSource, 'test');
 
         queue.reserve = function(timeToRun, cb) {
             if(first) {
@@ -254,13 +369,20 @@ describe('queue:', function() {
 
     it('should watch with interval and not get a message', function(done) {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, [{}]);
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
-        var queue = new Queue(conn, 'test');
+        var queue = new Queue(dataSource, 'test');
 
         queue.reserve = function(timeToRun, cb) {
             cb(null, null);
@@ -279,13 +401,20 @@ describe('queue:', function() {
 
     it('should kick all messages', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, {affectedRows: 123});
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
-        var queue = new Queue(conn, 'test');
+        var queue = new Queue(dataSource, 'test');
 
         var callback = function() {};
 
@@ -298,13 +427,20 @@ describe('queue:', function() {
 
     it('should kick a range of messages', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, {affectedRows: 123});
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
-        var queue = new Queue(conn, 'test');
+        var queue = new Queue(dataSource, 'test');
 
         var callback = function() {};
 
@@ -317,13 +453,20 @@ describe('queue:', function() {
 
     it('should fail to kick a range of messages', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, null);
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
-        var queue = new Queue(conn, 'test');
+        var queue = new Queue(dataSource, 'test');
 
         var callback = function() {};
 
@@ -336,13 +479,20 @@ describe('queue:', function() {
 
     it('should kick only one message', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, 1);
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
-        var queue = new Queue(conn, 'test');
+        var queue = new Queue(dataSource, 'test');
 
         var callback = function() {};
 
@@ -355,13 +505,20 @@ describe('queue:', function() {
 
     it('should kick only one message with delay', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, 1);
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
-        var queue = new Queue(conn, 'test');
+        var queue = new Queue(dataSource, 'test');
 
         var callback = function() {};
 

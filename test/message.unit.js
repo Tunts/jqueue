@@ -81,13 +81,20 @@ describe('message:', function() {
 
     it('should release a message', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, {affectedRows: 1});
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
-        var message = new Message(conn);
+        var message = new Message(dataSource);
 
         var callback = function() {};
 
@@ -99,13 +106,20 @@ describe('message:', function() {
 
     it('should release a message with delay', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, {affectedRows: 1});
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
-        var message = new Message(conn);
+        var message = new Message(dataSource);
 
         var callback = function() {};
 
@@ -117,13 +131,20 @@ describe('message:', function() {
 
     it('should fail to release a message', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, {affectedRows: 0});
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
-        var message = new Message(conn);
+        var message = new Message(dataSource);
 
         var callback = function() {};
 
@@ -135,13 +156,20 @@ describe('message:', function() {
 
     it('should touch message', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, {affectedRows: 1});
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
-        var message = new Message(conn);
+        var message = new Message(dataSource);
 
         var callback = function() {};
 
@@ -153,13 +181,20 @@ describe('message:', function() {
 
     it('should not touch a message', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, {affectedRows: 0});
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
-        var message = new Message(conn);
+        var message = new Message(dataSource);
 
         var callback = function() {};
 
@@ -171,13 +206,20 @@ describe('message:', function() {
 
     it('should delete message', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, {affectedRows: 1});
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
-        var message = new Message(conn);
+        var message = new Message(dataSource);
 
         var callback = function() {};
 
@@ -189,13 +231,20 @@ describe('message:', function() {
 
     it('should not delete a message', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, {affectedRows: 0});
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
-        var message = new Message(conn);
+        var message = new Message(dataSource);
 
         var callback = function() {};
 
@@ -207,13 +256,20 @@ describe('message:', function() {
 
     it('should bury message', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, {affectedRows: 1});
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
-        var message = new Message(conn);
+        var message = new Message(dataSource);
 
         var callback = function() {};
 
@@ -225,13 +281,45 @@ describe('message:', function() {
 
     it('should not bury a message', function() {
 
-        var conn = {
+        var connection = {
             query: function(query, params, cb) {
                 cb(null, {affectedRows: 0});
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
-        var message = new Message(conn);
+        var message = new Message(dataSource);
+
+        var callback = function() {};
+
+        message.bury(callback);
+
+        expect(callbackMock.withArgs(callback, sinon.match.object).calledOnce).to.be.true;
+
+    });
+
+    it('should connection fail when bury a message', function() {
+
+        var connection = {
+            query: function(query, params, cb) {
+                cb(null, {affectedRows: 0});
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb({error:'error'});
+            }
+        };
+
+        var message = new Message(dataSource);
 
         var callback = function() {};
 
