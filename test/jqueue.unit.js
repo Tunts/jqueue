@@ -19,49 +19,7 @@ describe('jqueue:', function() {
 
         var jqueue = new Jqueue();
 
-        expect(jqueue.init).to.exist;
         expect(jqueue.use).to.exist;
-
-    });
-
-    it('should init success', function() {
-
-        var dataSoure = {
-            connect: function(cb) {
-               cb(true);
-
-            }
-
-        };
-
-        var jqueue = new Jqueue(dataSoure);
-
-        var callback = function(){};
-
-        jqueue.init(callback);
-
-        expect(callbackMock.withArgs(callback, undefined, true).calledOnce).to.be.true;
-
-    });
-
-    it('should init fail', function() {
-
-        var dataSource = {
-            connect: function(cb) {
-                cb(false);
-            }
-
-        };
-
-        var jqueue = new Jqueue(dataSource);
-
-        var callback = function(){};
-
-        jqueue.init(callback);
-
-        expect(callbackMock.withArgs(callback,
-            sinon.match.object,
-            false).calledOnce).to.be.true;
 
     });
 
@@ -70,20 +28,19 @@ describe('jqueue:', function() {
         var connection = {
             query: function(query, params, cb) {
                 cb(null);
-            }
+            },
+            release : function() {}
         };
 
         var dataSource = {
-            connect: function(cb) {
-                cb(connection);
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
         var jqueue = new Jqueue(dataSource);
 
         var callback = function(){};
-
-        jqueue.init();
 
         jqueue.use('lalala', callback);
 
@@ -93,17 +50,18 @@ describe('jqueue:', function() {
 
     });
 
-    it('should use fail', function() {
+    it('should connection fail', function() {
 
         var connection = {
             query: function(query, params, cb) {
-                cb({error:'fuuuu'});
-            }
+                cb(null);
+            },
+            release : function() {}
         };
 
         var dataSource = {
-            connect: function(cb) {
-                cb(connection);
+            getConnection: function(cb) {
+                cb({error:'error'});
             }
         };
 
@@ -111,7 +69,32 @@ describe('jqueue:', function() {
 
         var callback = function(){};
 
-        jqueue.init();
+        jqueue.use('lalala', callback);
+
+        expect(callbackMock.withArgs(callback,
+            sinon.match.object,
+            undefined).calledOnce).to.be.true;
+
+    });
+
+    it('should use fail', function() {
+
+        var connection = {
+            query: function(query, params, cb) {
+                cb({error:'fuuuu'});
+            },
+            release : function() {}
+        };
+
+        var dataSource = {
+            getConnection: function(cb) {
+                cb(null, connection);
+            }
+        };
+
+        var jqueue = new Jqueue(dataSource);
+
+        var callback = function(){};
 
         jqueue.use('test', false, callback);
 
@@ -133,20 +116,19 @@ describe('jqueue:', function() {
                 } else {
                     cb(null);
                 }
-            }
+            },
+            release : function() {}
         };
 
         var dataSource = {
-            connect: function(cb) {
-                cb(connection);
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
         var jqueue = new Jqueue(dataSource);
 
         var callback = function(){};
-
-        jqueue.init();
 
         jqueue.use('test', false, true, callback);
 
@@ -161,20 +143,19 @@ describe('jqueue:', function() {
         var connection = {
             query: function(query, params, cb) {
                 cb({error:'fuuuu'});
-            }
+            },
+            release : function() {}
         };
 
         var dataSource = {
-            connect: function(cb) {
-                cb(connection);
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
         var jqueue = new Jqueue(dataSource);
 
         var callback = function(){};
-
-        jqueue.init();
 
         jqueue.use('testing', true, callback);
 
@@ -199,20 +180,19 @@ describe('jqueue:', function() {
                         cb(true);
                         break;
                 }
-            }
+            },
+            release : function() {}
         };
 
         var dataSource = {
-            connect: function(cb) {
-                cb(connection);
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 
         var jqueue = new Jqueue(dataSource);
 
         var callback = function(){};
-
-        jqueue.init();
 
         jqueue.use('test', callback);
 
@@ -229,12 +209,13 @@ describe('jqueue:', function() {
         var connection = {
             query: function(query, params, cb) {
                 cb({error:'fuuuu'});
-            }
+            },
+            release : function() {}
         };
 
         var dataSource = {
-            connect: function(cb) {
-                cb(connection);
+            getConnection: function(cb) {
+                cb(null, connection);
             }
         };
 

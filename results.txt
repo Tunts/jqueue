@@ -1,0 +1,12 @@
+[31m>> [39mMocha exploded!
+[31m>> [39mError: Cannot find module 'tap'[31m
+>> [39m    at Function.Module._resolveFilename (module.js:338:15)[31m
+>> [39m    at Function.Module._load (module.js:289:25)[31m
+>> [39m    at Module.require (module.js:366:17)[31m
+>> [39m    at require (module.js:385:17)[31m
+>> [39m    at Object.<anonymous> (C:\tunts\queue\jqueue\test\node_modules\node-mysql\node_modules\mysql\node_modules\readable-stream\node_modules\core-util-is\test.js:1:76)[31m
+>> [39m    at Module._compile (module.js:435:26)[31m
+>> [39m    at Object.Module._extensions..js (module.js:442:10)[31m
+>> [39m    at Module.load (module.js:356:32)[31m
+>> [39m    at Function.Module._load (module.js:313:12)[31m
+>> [39m    at Module.require (module.js:366:17)
