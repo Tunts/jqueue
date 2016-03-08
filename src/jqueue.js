@@ -33,7 +33,7 @@ function Jqueue(ds) {
         execQuery('CREATE TABLE ?? (\
         id BIGINT NOT NULL AUTO_INCREMENT,\
         status ENUM(\'ready\', \'reserved\', \'buried\') NOT NULL,\
-        data VARCHAR(4096) NOT NULL,\
+        data VARCHAR(65535) NOT NULL,\
         priority TINYINT NOT NULL,\
         date_time TIMESTAMP NOT NULL,\
         time_to_run TIMESTAMP NULL DEFAULT NULL,\
