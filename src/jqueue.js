@@ -24,21 +24,23 @@ function Jqueue(ds) {
     }
 
     function createNewQueue(queueName, isMemory, cb) {
-        var storageEngine;
+        var storageEngine, dataType;
         if (isMemory) {
+            dataType = 'VARCHAR(21800)';
             storageEngine = 'MEMORY';
         } else {
+            dataType = 'TEXT';
             storageEngine = 'MyISAM';
         }
         execQuery('CREATE TABLE ?? (\
         id BIGINT NOT NULL AUTO_INCREMENT,\
         status ENUM(\'ready\', \'reserved\', \'buried\') NOT NULL,\
-        data VARCHAR(21800) NOT NULL,\
+        data ?? NOT NULL,\
         priority TINYINT NOT NULL,\
         date_time TIMESTAMP NOT NULL,\
         time_to_run TIMESTAMP NULL DEFAULT NULL,\
         version INT NULL DEFAULT NULL,\
-        PRIMARY KEY (id)) ENGINE = ??', [queueName, storageEngine], cb);
+        PRIMARY KEY (id)) ENGINE = ??', [queueName, dataType, storageEngine], cb);
     }
 
     function use(queueName, parameter1, parameter2, parameter3) {
