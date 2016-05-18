@@ -1,5 +1,5 @@
-var Queue =  require('./queue');
-var JqueueException =  require('./exception');
+var Queue = require('./queue');
+var JqueueException = require('./exception');
 var callBack = require('./callback');
 
 function Jqueue(ds) {
@@ -9,8 +9,8 @@ function Jqueue(ds) {
     var queues = {};
 
     function execQuery(query, params, cb) {
-        dataSource.getConnection(function(error, connection) {
-            if(error) {
+        dataSource.getConnection(function (error, connection) {
+            if (error) {
                 cb(error);
             } else {
                 connection.query(query, params, cb);
@@ -35,12 +35,12 @@ function Jqueue(ds) {
         execQuery('CREATE TABLE ?? (\
         id BIGINT NOT NULL AUTO_INCREMENT,\
         status ENUM(\'ready\', \'reserved\', \'buried\') NOT NULL,\
-        data ?? NOT NULL,\
+        data ' + dataType + ' NOT NULL,\
         priority TINYINT NOT NULL,\
         date_time TIMESTAMP NOT NULL,\
         time_to_run TIMESTAMP NULL DEFAULT NULL,\
         version INT NULL DEFAULT NULL,\
-        PRIMARY KEY (id)) ENGINE = ??', [queueName, dataType, storageEngine], cb);
+        PRIMARY KEY (id)) ENGINE = ??', [queueName, storageEngine], cb);
     }
 
     function use(queueName, parameter1, parameter2, parameter3) {
@@ -68,7 +68,7 @@ function Jqueue(ds) {
             var queue = undefined;
             verifyIfQueueExists(queueName, function (error) {
                 if (error) {
-                    if(noCreate) {
+                    if (noCreate) {
                         callBack(cb, error);
                     } else {
                         createNewQueue(queueName, isMemory, function (error) {

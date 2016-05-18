@@ -1,6 +1,6 @@
 {
   "name": "jqueue",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "MySQL backed plugable Node.js job queue based on the Beanstalk Job Lifecycle",
   "devDependencies": {
     "chai": "^3.4.1",
