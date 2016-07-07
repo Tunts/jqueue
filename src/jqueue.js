@@ -40,6 +40,8 @@ function Jqueue(ds) {
         date_time TIMESTAMP NOT NULL,\
         time_to_run TIMESTAMP NULL DEFAULT NULL,\
         version INT NULL DEFAULT NULL,\
+        `created_at` TIMESTAMP DEFAULT now(), \
+        `modified_at` TIMESTAMP DEFAULT now() ON UPDATE now(), \
         PRIMARY KEY (id)) ENGINE = ??', [queueName, storageEngine], cb);
     }
 
