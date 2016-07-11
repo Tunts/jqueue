@@ -165,8 +165,8 @@ function Queue (dataSource, name) {
     };
 
     function writeMessage (message, cb) {
-        execQuery('INSERT INTO ?? (status, data, priority, date_time) \
-            VALUES (?,?,?,DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND))',
+        execQuery('INSERT INTO ?? (status, data, priority, date_time, created_at, modified_at) \
+            VALUES (?,?,?,DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND), now(), now())',
             [message.getQueueName(), message.getStatus(), message.getData(), message.getPriority(), message.getDelay()], cb)
     }
 
