@@ -37,11 +37,11 @@ function Jqueue(ds) {
         status ENUM(\'ready\', \'reserved\', \'buried\') NOT NULL,\
         data ' + dataType + ' NOT NULL,\
         priority TINYINT NOT NULL,\
-        date_time TIMESTAMP NOT NULL,\
-        time_to_run TIMESTAMP NULL DEFAULT NULL,\
+        date_time TIMESTAMP DEFAULT 0 NOT NULL,\
+        time_to_run TIMESTAMP DEFAULT 0 NOT NULL,\
         version INT NULL DEFAULT NULL,\
-        `created_at` TIMESTAMP DEFAULT now(), \
-        `modified_at` TIMESTAMP DEFAULT now() ON UPDATE now(), \
+        `created_at` TIMESTAMP DEFAULT 0 NOT NULL, \
+        `modified_at` TIMESTAMP DEFAULT 0 ON UPDATE now(), \
         PRIMARY KEY (id)) ENGINE = ??', [queueName, storageEngine], cb);
     }
 
