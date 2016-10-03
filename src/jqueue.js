@@ -30,7 +30,7 @@ function Jqueue(ds) {
             storageEngine = 'MEMORY';
         } else {
             dataType = 'TEXT';
-            storageEngine = 'MyISAM';
+            storageEngine = 'InnoDB';
         }
         execQuery('CREATE TABLE IF NOT EXISTS ?? (\
         id BIGINT NOT NULL AUTO_INCREMENT,\

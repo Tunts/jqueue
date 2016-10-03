@@ -176,33 +176,39 @@ function Queue(dataSource, name) {
             if (error) {
                 cb(error);
             } else {
-                connection.beginTransaction(function (err) {
+                connection.query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE', function (err) {
                     if (err) {
                         cb(err);
                     } else {
-                        connection.query('SELECT * FROM ?? \
+                        connection.beginTransaction(function (err) {
+                            if (err) {
+                                cb(err);
+                            } else {
+                                connection.query('SELECT * FROM ?? \
             WHERE (date_time <= CURRENT_TIMESTAMP AND status = ?) OR (time_to_run IS NOT NULL\
              AND time_to_run < CURRENT_TIMESTAMP AND status = ?) ORDER BY priority desc,\
             date_time asc LIMIT 1 FOR UPDATE', [queueName, 'ready', 'reserved'], function (error, data) {
-                            var message = data;
-                            if (!error && message && message.length) {
-                                message[0].status = 'reserved';
-                                connection.query('UPDATE ?? SET status = ?, version = ?, \
+                                    var message = data;
+                                    if (!error && message && message.length) {
+                                        message[0].status = 'reserved';
+                                        connection.query('UPDATE ?? SET status = ?, version = ?, \
                 time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) WHERE id = ?',
-                                    [queueName, message[0].status, version, timeToRun, message[0].id], function (error) {
+                                            [queueName, message[0].status, version, timeToRun, message[0].id], function (error) {
+                                                connection.commit(function (err) {
+                                                    if (!err) {
+                                                        connection.release();
+                                                    }
+                                                    cb(error, message);
+                                                });
+                                            });
+                                    } else {
                                         connection.commit(function (err) {
                                             if (!err) {
                                                 connection.release();
                                             }
                                             cb(error, message);
                                         });
-                                    });
-                            } else {
-                                connection.commit(function (err) {
-                                    if (!err) {
-                                        connection.release();
                                     }
-                                    cb(error, message);
                                 });
                             }
                         });
