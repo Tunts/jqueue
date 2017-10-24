@@ -24,12 +24,14 @@ function Jqueue(ds) {
     }
 
     function createNewQueue(queueName, isMemory, cb) {
-        var storageEngine, dataType;
+        var storageEngine, dataType, errorType;
         if (isMemory) {
-            dataType = 'VARCHAR(21800)';
+            dataType = 'VARCHAR(20000)';
+            errorType = 'VARCHAR(1000)';
             storageEngine = 'MEMORY';
         } else {
             dataType = 'TEXT';
+            errorType = 'TEXT';
             storageEngine = 'InnoDB';
         }
         execQuery('CREATE TABLE IF NOT EXISTS ?? (\
@@ -39,6 +41,9 @@ function Jqueue(ds) {
         priority TINYINT NOT NULL,\
         date_time TIMESTAMP DEFAULT 0 NOT NULL,\
         time_to_run TIMESTAMP DEFAULT 0 NOT NULL,\
+        tag VARCHAR(255) DEFAULT NULL,\
+        reservation_counter INT DEFAULT 0 NOT NULL,\
+        error ' + errorType + ' DEFAULT NULL,\
         version INT NULL DEFAULT NULL,\
         `created_at` TIMESTAMP DEFAULT 0 NOT NULL, \
         `modified_at` TIMESTAMP DEFAULT 0 ON UPDATE now(), \

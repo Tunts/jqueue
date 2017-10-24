@@ -1,6 +1,6 @@
 {
   "name": "jqueue",
-  "version": "0.1.10",
+  "version": "1.0.0",
   "description": "MySQL backed plugable Node.js job queue based on the Beanstalk Job Lifecycle",
   "devDependencies": {
     "chai": "^3.4.1",
@@ -38,5 +38,8 @@
   "bugs": {
     "url": "https://github.com/Tunts/jqueue/issues"
   },
-  "homepage": "https://github.com/Tunts/jqueue#readme"
+  "homepage": "https://github.com/Tunts/jqueue#readme",
+  "dependencies": {
+    "mocha": "^2.5.3"
+  }
 }

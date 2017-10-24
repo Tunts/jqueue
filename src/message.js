@@ -1,52 +1,58 @@
 var callBack = require('./callback');
 
-function Message (dataSource, data, queueName, delay, priority, status, dateTime, id, timeToRun, version) {
+function Message(dataSource, data, queueName, delay, priority, status, dateTime, id, timeToRun, version, tag, reservationCounter, error) {
     var self = this;
-    var dataSource = dataSource;
 
-    var id = id;
-    var data = data;
-    var status = status || 'ready';
-    var delay = delay || 0;
-    var priority = priority || 0;
-    var dateTime = dateTime;
-    var timeToRun = timeToRun;
-    var queueName = queueName;
-    var version = version;
+    status = status || 'ready';
+    delay = delay || 0;
+    priority = priority || 0;
+    reservationCounter = reservationCounter || 0;
 
-    this.getId = function() {
+    this.getId = function () {
         return id;
     };
 
-    this.getData = function() {
+    this.getData = function () {
         return data;
     };
 
-    this.getStatus = function() {
+    this.getStatus = function () {
         return status;
     };
 
-    this.getDelay = function() {
+    this.getDelay = function () {
         return delay;
     };
 
-    this.getPriority = function() {
+    this.getPriority = function () {
         return priority;
     };
 
-    this.getDateTime = function() {
+    this.getDateTime = function () {
         return dateTime;
     };
 
-    this.getTimeToRun = function() {
+    this.getTimeToRun = function () {
         return timeToRun;
     };
 
-    this.getQueueName = function() {
+    this.getQueueName = function () {
         return queueName;
     };
 
-    this.release = function(parameter1, parameter2) {
+    this.getTag = function () {
+        return tag;
+    };
+
+    this.getReservationCounter = function () {
+        return reservationCounter;
+    };
+
+    this.getError = function () {
+        return error;
+    };
+
+    this.release = function (parameter1, parameter2) {
         var cb;
         switch (arguments.length) {
             case 1:
@@ -64,30 +70,37 @@ function Message (dataSource, data, queueName, delay, priority, status, dateTime
         releaseMessage(response);
     };
 
-    this.touch = function(cb) {
-        refreshMessage(function(error, data) {
+    this.touch = function (cb) {
+        refreshMessage(function (error, data) {
             error = verifyReserveError(error, data);
             callBack(cb, error);
         });
     };
 
-    this.delete = function(cb) {
-        deleteMessage(function(error, data) {
+    this.delete = function (cb) {
+        deleteMessage(function (error, data) {
             error = verifyReserveError(error, data);
             callBack(cb, error);
         });
     };
 
-    this.bury = function(cb) {
-        buryMessage(function(error, data) {
+    this.bury = function (reason, cb) {
+        if (typeof reason === 'function') {
+            cb = reason;
+            reason = null;
+        }
+        if (reason && typeof reason !== 'string') {
+            reason = JSON.stringify(reason);
+        }
+        buryMessage(reason, function (error, data) {
             error = verifyReserveError(error, data);
             callBack(cb, error);
         });
     };
 
     function execQuery(query, params, cb) {
-        dataSource.getConnection(function(error, connection) {
-            if(error) {
+        dataSource.getConnection(function (error, connection) {
+            if (error) {
                 cb(error);
             } else {
                 connection.query(query, params, cb);
@@ -98,12 +111,12 @@ function Message (dataSource, data, queueName, delay, priority, status, dateTime
 
     function deleteMessage(cb) {
         execQuery('DELETE FROM ?? WHERE id = ? AND version = ? AND status = ? AND time_to_run >= CURRENT_TIMESTAMP',
-            [queueName, id, version, 'reserved'] , cb);
+            [queueName, id, version, 'reserved'], cb);
     }
 
-    function buryMessage(cb) {
-        execQuery('UPDATE ?? SET status = ? WHERE id = ? AND version = ? AND status = ? AND time_to_run >= CURRENT_TIMESTAMP',
-            [queueName, 'buried', id, version, 'reserved'], cb);
+    function buryMessage(error, cb) {
+        execQuery('UPDATE ?? SET status = ?, error = ? WHERE id = ? AND version = ? AND status = ? AND time_to_run >= CURRENT_TIMESTAMP',
+            [queueName, 'buried', error, id, version, 'reserved'], cb);
     }
 
     function releaseMessage(cb) {
@@ -119,13 +132,14 @@ function Message (dataSource, data, queueName, delay, priority, status, dateTime
     }
 
     function verifyReserveError(error, info) {
-        if(!error && info && !info.affectedRows) {
+        if (!error && info && !info.affectedRows) {
             error = {error: 'This message is no longer available'};
         }
         return error;
     }
 
 }
+
 Message.constructor = Message;
 
 module.exports = Message;
