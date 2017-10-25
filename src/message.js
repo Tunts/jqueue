@@ -52,7 +52,7 @@ function Message(dataSource, data, queueName, delay, priority, status, dateTime,
         return error;
     };
 
-    this.release = function (parameter1, parameter2) {
+    this.release = function (parameter1, parameter2, parameter3) {
         var cb;
         switch (arguments.length) {
             case 1:
@@ -61,6 +61,11 @@ function Message(dataSource, data, queueName, delay, priority, status, dateTime,
             case 2:
                 delay = parameter1;
                 cb = parameter2;
+                break;
+            case 3:
+                delay = parameter1;
+                priority = parameter2;
+                cb = parameter3;
                 break;
         }
         var response = function (error, data) {
@@ -120,9 +125,9 @@ function Message(dataSource, data, queueName, delay, priority, status, dateTime,
     }
 
     function releaseMessage(cb) {
-        execQuery('UPDATE ?? SET status = ?, date_time = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND) \
-             WHERE id = ? AND version = ? AND status = ? AND time_to_run >= CURRENT_TIMESTAMP',
-            [queueName, 'ready', delay, id, version, 'reserved'], cb);
+        execQuery('UPDATE ?? SET status = ?, date_time = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND), \
+             priority = ? WHERE id = ? AND version = ? AND status = ? AND time_to_run >= CURRENT_TIMESTAMP',
+            [queueName, 'ready', delay, priority, id, version, 'reserved'], cb);
     }
 
     function refreshMessage(cb) {
