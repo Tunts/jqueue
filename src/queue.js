@@ -1,5 +1,6 @@
 var callBack = require('./callback');
 var Message = require('./message');
+const uuid = require('uuid');
 
 var defaultWatchInterval = 1000; //ms
 var defaultTimeToRun = 5; //s
@@ -73,7 +74,7 @@ function Queue(dataSource, name) {
                 break;
         }
         timeToRun = timeToRun || defaultTimeToRun;
-        var version = Math.floor((Math.random() * 100000) + 1);
+        var version = uuid.v4();
         retrieveMessage(name, tag, timeToRun, version, function (error, data) {
             var message = undefined;
             if (!error && data && data.length) {
@@ -194,7 +195,7 @@ function Queue(dataSource, name) {
                 break;
         }
         timeToRun = timeToRun || defaultTimeToRun;
-        var version = Math.floor((Math.random() * 100000) + 1);
+        var version = uuid.v4();
         pickMessage(name, id, timeToRun, version, function (error, data) {
             var message = undefined;
             if (error) {
@@ -233,50 +234,45 @@ function Queue(dataSource, name) {
             if (error) {
                 cb(error);
             } else {
-                connection.query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE', function (err) {
+                var params = [
+                    queueName,
+                    'reserved',
+                    version,
+                    timeToRun,
+                    'ready',
+                    'reserved'
+                ];
+                var sql = 'UPDATE ?? SET status = ?, version = ?, time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND), \
+                    reservation_counter = reservation_counter + 1 WHERE ((date_time <= CURRENT_TIMESTAMP AND status = ?) OR (time_to_run IS NOT NULL \
+                    AND time_to_run < CURRENT_TIMESTAMP AND status = ?))';
+                if (tag) {
+                    sql += ' AND tag = ?';
+                    params.push(tag);
+                }
+                sql += ' ORDER BY priority desc, date_time asc LIMIT 1';
+                connection.query(sql, params, function (err, info) {
                     if (err) {
+                        connection.release();
                         cb(err);
                     } else {
-                        connection.beginTransaction(function (err) {
-                            if (err) {
-                                cb(err);
-                            } else {
-                                var params = [queueName, 'ready', 'reserved'];
-                                var sql = 'SELECT * FROM ?? \
-            WHERE ((date_time <= CURRENT_TIMESTAMP AND status = ?) OR (time_to_run IS NOT NULL\
-             AND time_to_run < CURRENT_TIMESTAMP AND status = ?))';
-                                if (tag) {
-                                    sql += ' AND tag = ?';
-                                    params.push(tag);
+                        if (!info.affectedRows) {
+                            connection.release();
+                            cb(err, null);
+                        } else {
+                            connection.query('SELECT * FROM ?? WHERE status = ? AND version = ?', [
+                                queueName,
+                                'reserved',
+                                version
+                            ], function (err, data) {
+                                if (err) {
+                                    connection.release();
+                                    cb(err);
+                                } else {
+                                    connection.release();
+                                    cb(error, data);
                                 }
-                                sql += ' ORDER BY priority desc,\
-            date_time asc LIMIT 1 FOR UPDATE';
-                                connection.query(sql, params, function (error, data) {
-                                    var message = data;
-                                    if (!error && message && message.length) {
-                                        message[0].status = 'reserved';
-                                        connection.query('UPDATE ?? SET status = ?, version = ?, \
-                time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND), \
-                 reservation_counter = reservation_counter + 1  WHERE id = ?',
-                                            [queueName, message[0].status, version, timeToRun, message[0].id], function (error) {
-                                                connection.commit(function (err) {
-                                                    if (!err) {
-                                                        connection.release();
-                                                    }
-                                                    cb(error, message);
-                                                });
-                                            });
-                                    } else {
-                                        connection.commit(function (err) {
-                                            if (!err) {
-                                                connection.release();
-                                            }
-                                            cb(error, message);
-                                        });
-                                    }
-                                });
-                            }
-                        });
+                            });
+                        }
                     }
                 });
             }
@@ -303,44 +299,40 @@ function Queue(dataSource, name) {
             if (error) {
                 cb(error);
             } else {
-                connection.query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE', function (err) {
+                var params = [
+                    queueName,
+                    'reserved',
+                    version,
+                    timeToRun,
+                    ['ready', 'buried'],
+                    'reserved',
+                    id
+                ];
+                var sql = 'UPDATE ?? SET status = ?, version = ?, time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND), \
+                    reservation_counter = reservation_counter + 1 WHERE ((date_time <= CURRENT_TIMESTAMP AND status IN (?)) OR (time_to_run IS NOT NULL \
+                    AND time_to_run < CURRENT_TIMESTAMP AND status = ?)) AND id = ?';
+                connection.query(sql, params, function (err, info) {
                     if (err) {
+                        connection.release();
                         cb(err);
                     } else {
-                        connection.beginTransaction(function (err) {
-                            if (err) {
-                                cb(err);
-                            } else {
-                                var params = [queueName, ['ready', 'buried'], 'reserved', id];
-                                var sql = 'SELECT * FROM ?? \
-            WHERE ((date_time <= CURRENT_TIMESTAMP AND status in (?)) OR (time_to_run IS NOT NULL \
-             AND time_to_run < CURRENT_TIMESTAMP AND status = ?)) AND id = ? FOR UPDATE';
-                                connection.query(sql, params, function (error, data) {
-                                    var message = data;
-                                    if (!error && message && message.length) {
-                                        message[0].status = 'reserved';
-                                        connection.query('UPDATE ?? SET status = ?, version = ?, \
-                time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND),\
-                 reservation_counter = reservation_counter + 1  WHERE id = ?',
-                                            [queueName, message[0].status, version, timeToRun, message[0].id], function (error) {
-                                                connection.commit(function (err) {
-                                                    if (!err) {
-                                                        connection.release();
-                                                    }
-                                                    cb(error, message);
-                                                });
-                                            });
-                                    } else {
-                                        connection.commit(function (err) {
-                                            if (!err) {
-                                                connection.release();
-                                            }
-                                            cb(error, message);
-                                        });
-                                    }
-                                });
-                            }
-                        });
+                        if (!info.affectedRows) {
+                            connection.release();
+                            cb(err, null);
+                        } else {
+                            connection.query('SELECT * FROM ?? WHERE id = ?', [
+                                queueName,
+                                id
+                            ], function (err, data) {
+                                if (err) {
+                                    connection.release();
+                                    cb(err);
+                                } else {
+                                    connection.release();
+                                    cb(error, data);
+                                }
+                            });
+                        }
                     }
                 });
             }

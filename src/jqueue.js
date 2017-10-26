@@ -44,9 +44,10 @@ function Jqueue(ds) {
         tag VARCHAR(255) DEFAULT NULL,\
         reservation_counter INT DEFAULT 0 NOT NULL,\
         error ' + errorType + ' DEFAULT NULL,\
-        version INT NULL DEFAULT NULL,\
+        version VARCHAR(36) NULL DEFAULT NULL,\
         `created_at` TIMESTAMP DEFAULT 0 NOT NULL, \
         `modified_at` TIMESTAMP DEFAULT 0 ON UPDATE now(), \
+        UNIQUE (version), \
         PRIMARY KEY (id)) ENGINE = ??', [queueName, storageEngine], cb);
     }
 
