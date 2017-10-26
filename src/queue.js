@@ -199,7 +199,7 @@ function Queue(dataSource, name) {
         pickMessage(name, id, timeToRun, version, function (error, data) {
             var message = undefined;
             if (error) {
-                cb(error);
+                callBack(cb, error);
             } else if (data && data[0]) {
                 var messageObject = data[0];
                 message = new Message(dataSource, messageObject.data, name, 0,
@@ -210,12 +210,12 @@ function Queue(dataSource, name) {
             } else {
                 getMessageById(name, id, function (error, data) {
                     if (error) {
-                        callBack(error);
+                        callBack(cb, error);
                     } else {
                         if (data && data[0]) {
-                            callBack('message reserved by someone else');
+                            callBack(cb, 'message reserved by someone else');
                         } else {
-                            callBack(error, message);
+                            callBack(cb, error, message);
                         }
                     }
                 });
@@ -230,51 +230,31 @@ function Queue(dataSource, name) {
     }
 
     function retrieveMessage(queueName, tag, timeToRun, version, cb) {
-        dataSource.getConnection(function (error, connection) {
-            if (error) {
-                cb(error);
-            } else {
-                var params = [
-                    queueName,
-                    'reserved',
-                    version,
-                    timeToRun,
-                    'ready',
-                    'reserved'
-                ];
-                var sql = 'UPDATE ?? SET status = ?, version = ?, time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND), \
+        var params = [
+            queueName,
+            'reserved',
+            version,
+            timeToRun,
+            'ready',
+            'reserved'
+        ];
+        var sql = 'UPDATE ?? SET status = ?, version = ?, time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND), \
                     reservation_counter = reservation_counter + 1 WHERE ((date_time <= CURRENT_TIMESTAMP AND status = ?) OR (time_to_run IS NOT NULL \
                     AND time_to_run < CURRENT_TIMESTAMP AND status = ?))';
-                if (tag) {
-                    sql += ' AND tag = ?';
-                    params.push(tag);
-                }
-                sql += ' ORDER BY priority desc, date_time asc LIMIT 1';
-                connection.query(sql, params, function (err, info) {
-                    if (err) {
-                        connection.release();
-                        cb(err);
-                    } else {
-                        if (!info.affectedRows) {
-                            connection.release();
-                            cb(err, null);
-                        } else {
-                            connection.query('SELECT * FROM ?? WHERE status = ? AND version = ?', [
-                                queueName,
-                                'reserved',
-                                version
-                            ], function (err, data) {
-                                if (err) {
-                                    connection.release();
-                                    cb(err);
-                                } else {
-                                    connection.release();
-                                    cb(error, data);
-                                }
-                            });
-                        }
-                    }
-                });
+        if (tag) {
+            sql += ' AND tag = ?';
+            params.push(tag);
+        }
+        sql += ' ORDER BY priority desc, date_time asc LIMIT 1';
+        execQuery(sql, params, function (err, info) {
+            if (!info.affectedRows) {
+                cb(err, null);
+            } else {
+                execQuery('SELECT * FROM ?? WHERE status = ? AND version = ?', [
+                    queueName,
+                    'reserved',
+                    version
+                ], cb);
             }
         });
     }
@@ -295,46 +275,26 @@ function Queue(dataSource, name) {
     }
 
     function pickMessage(queueName, id, timeToRun, version, cb) {
-        dataSource.getConnection(function (error, connection) {
-            if (error) {
-                cb(error);
+        var params = [
+            queueName,
+            'reserved',
+            version,
+            timeToRun,
+            ['ready', 'buried'],
+            'reserved',
+            id
+        ];
+        var sql = 'UPDATE ?? SET status = ?, version = ?, time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND), \
+        reservation_counter = reservation_counter + 1 WHERE ((date_time <= CURRENT_TIMESTAMP AND status IN (?)) OR (time_to_run IS NOT NULL \
+        AND time_to_run < CURRENT_TIMESTAMP AND status = ?)) AND id = ?';
+        execQuery(sql, params, function (err, info) {
+            if (!info.affectedRows) {
+                cb(err, null);
             } else {
-                var params = [
+                execQuery('SELECT * FROM ?? WHERE id = ?', [
                     queueName,
-                    'reserved',
-                    version,
-                    timeToRun,
-                    ['ready', 'buried'],
-                    'reserved',
                     id
-                ];
-                var sql = 'UPDATE ?? SET status = ?, version = ?, time_to_run = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND), \
-                    reservation_counter = reservation_counter + 1 WHERE ((date_time <= CURRENT_TIMESTAMP AND status IN (?)) OR (time_to_run IS NOT NULL \
-                    AND time_to_run < CURRENT_TIMESTAMP AND status = ?)) AND id = ?';
-                connection.query(sql, params, function (err, info) {
-                    if (err) {
-                        connection.release();
-                        cb(err);
-                    } else {
-                        if (!info.affectedRows) {
-                            connection.release();
-                            cb(err, null);
-                        } else {
-                            connection.query('SELECT * FROM ?? WHERE id = ?', [
-                                queueName,
-                                id
-                            ], function (err, data) {
-                                if (err) {
-                                    connection.release();
-                                    cb(err);
-                                } else {
-                                    connection.release();
-                                    cb(error, data);
-                                }
-                            });
-                        }
-                    }
-                });
+                ], cb);
             }
         });
     }

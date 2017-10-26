@@ -1,5 +1,6 @@
 function callBack(cb, error, data, other) {
     if(cb) {
+        console.log(cb);
         try {
             cb(error, data, other);
         } catch (err) {
