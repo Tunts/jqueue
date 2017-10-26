@@ -5,7 +5,6 @@ var callBack = require('./callback');
 function Jqueue(ds) {
 
     var dataSource = ds;
-    var dataSource;
     var queues = {};
 
     function execQuery(query, params, cb) {

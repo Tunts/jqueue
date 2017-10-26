@@ -247,7 +247,7 @@ function Queue(dataSource, name) {
         }
         sql += ' ORDER BY priority desc, date_time asc LIMIT 1';
         execQuery(sql, params, function (err, info) {
-            if (!info.affectedRows) {
+            if (err || !info.affectedRows) {
                 cb(err, null);
             } else {
                 execQuery('SELECT * FROM ?? WHERE status = ? AND version = ?', [
