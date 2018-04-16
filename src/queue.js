@@ -118,7 +118,7 @@ function Queue(dataSource, name) {
         self.reserve(timeToRun, tag, function (error, data) {
             if (!error && !data) {
                 var interval = setInterval(function () {
-                    self.reserve(timeToRun, function (error, data) {
+                    self.reserve(timeToRun, tag, function (error, data) {
                         if (error || data) {
                             clearInterval(interval);
                             callBack(cb, error, data);
