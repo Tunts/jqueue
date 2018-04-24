@@ -34,7 +34,7 @@ function Jqueue(ds) {
             storageEngine = 'InnoDB';
         }
         execQuery('CREATE TABLE IF NOT EXISTS ?? (\
-        id VARCHAR(36) NOT NULL,\
+        id BIGINT NOT NULL AUTO_INCREMENT,\
         status ENUM(\'ready\', \'reserved\', \'buried\') NOT NULL,\
         data ' + dataType + ' NOT NULL,\
         priority TINYINT NOT NULL,\
