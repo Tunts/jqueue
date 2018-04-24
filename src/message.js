@@ -52,20 +52,26 @@ function Message(dataSource, data, queueName, delay, priority, status, dateTime,
         return error;
     };
 
-    this.release = function (parameter1, parameter2, parameter3) {
+    this.release = function (parameter1, parameter2, parameter3, parameter4) {
         var cb;
         switch (arguments.length) {
             case 1:
                 cb = parameter1;
                 break;
             case 2:
-                delay = parameter1;
+                delay = parameter1 || delay;
                 cb = parameter2;
                 break;
             case 3:
-                delay = parameter1;
+                delay = parameter1 || delay;
                 priority = parameter2;
                 cb = parameter3;
+                break;
+            case 4:
+                delay = parameter1 || delay;
+                priority = parameter2;
+                tag = parameter3;
+                cb = parameter4;
                 break;
         }
         var response = function (error, data) {
@@ -125,9 +131,15 @@ function Message(dataSource, data, queueName, delay, priority, status, dateTime,
     }
 
     function releaseMessage(cb) {
-        execQuery('UPDATE ?? SET status = ?, date_time = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND), \
-             priority = ? WHERE id = ? AND version = ? AND status = ? AND time_to_run >= CURRENT_TIMESTAMP',
-            [queueName, 'ready', delay, priority, id, version, 'reserved'], cb);
+        var sql = 'UPDATE ?? SET status = ?, ';
+        var params = [queueName, 'ready'];
+        if(delay > 0) {
+            sql += 'date_time = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND), ';
+            params.push(delay);
+        }
+        sql += 'priority = ?, tag = ? WHERE id = ? AND version = ? AND status = ? AND time_to_run >= CURRENT_TIMESTAMP';
+        params = params.concat([priority, tag, id, version, 'reserved']);
+        execQuery(sql , params, cb);
     }
 
     function refreshMessage(cb) {
