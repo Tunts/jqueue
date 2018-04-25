@@ -331,6 +331,31 @@ queue.kickMessage(123, 5, function(error) {
 });
 ```
 
+### Pick
+
+Parameters: id, timeToRun, callback.
+- id: (INT) id of the message (mandatory);
+- timeToRun: (INT) time to process message in seconds, default: 5 (optional);
+- callback: (FUNCTION) the callback function (mandatory).
+
+```javascript
+// id 123
+queue.pick(123, function(error, message) {
+  if(!error && message) {
+    console.log('I am a message object', message);
+  }
+});
+```
+
+```javascript
+// id 123, time to run 3
+queue.pick(123, 3, function(error, message) {
+  if(!error && message) {
+    console.log('I am a message object', message);
+  }
+});
+```
+
 # Message
 
 ## Message Object
@@ -353,6 +378,8 @@ Parameters: delay, callback.
 - delay: (INT) delay in seconds, default: 0 (optional);
 - tag: (STRING) new tag to the message, default: null;
 - callback (FUNCTION) the callback function (mandatory).
+
+Obs: if delay is set to 0, the delay will not be changed
 
 ```javascript
 // not delayed
