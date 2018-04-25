@@ -224,12 +224,9 @@ function Queue(dataSource, name) {
     };
 
     function writeMessage(message, cb) {
-        var id = uuid.v4();
-        execQuery('INSERT INTO ?? (id, status, data, priority, tag, date_time, created_at, modified_at) \
-            VALUES (?,?,?,?,?,DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND), now(), now())',
-            [message.getQueueName(), id, message.getStatus(), message.getData(), message.getPriority(), message.getTag(), message.getDelay()], function (error) {
-                cb(error, {insertId: id});
-            });
+        execQuery('INSERT INTO ?? (status, data, priority, tag, date_time, created_at, modified_at) \
+            VALUES (?,?,?,?,DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND), now(), now())',
+            [message.getQueueName(), message.getStatus(), message.getData(), message.getPriority(), message.getTag(), message.getDelay()], cb);
     }
 
     function retrieveMessage(queueName, tag, timeToRun, version, cb) {
